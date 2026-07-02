@@ -5,8 +5,12 @@ echo "============================================================"
 echo "  PiraPire - iniciando contenedor"
 echo "============================================================"
 
-echo "1. Instalando dependencias de Node (Tailwind)..."
-npm install --no-fund --no-audit
+echo "1. Verificando dependencias de Node (Tailwind)..."
+if [ -d "node_modules" ]; then
+    echo "Dependencias de Node ya instaladas en la imagen."
+else
+    npm install --no-fund --no-audit
+fi
 
 echo "2. Compilando Tailwind CSS..."
 npm run build:css

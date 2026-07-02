@@ -19,8 +19,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Instalar dependencias de Node con cache de Docker
+COPY package*.json /app/
+RUN npm ci --no-fund --no-audit
+
 # Copiar el código del proyecto
 COPY . /app/
+
+# Compilar Tailwind en build para que Coolify publique CSS actualizado
+RUN npm run build:css
 
 # Exponer el puerto
 EXPOSE 8000
