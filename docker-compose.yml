@@ -11,5 +11,4 @@ services:
       - .:/app
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    # ponytail: comando de producción básico con Gunicorn y estáticos por WhiteNoise
-    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && python init_admin.py && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    # El entrypoint se encarga de todo el flujo (Tailwind, migraciones, collectstatic, gunicorn)

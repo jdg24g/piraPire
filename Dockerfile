@@ -6,10 +6,13 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Instalar dependencias del sistema mínimas
+# Instalar dependencias del sistema y Node.js para Tailwind
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar dependencias de Python
@@ -22,5 +25,8 @@ COPY . /app/
 # Exponer el puerto
 EXPOSE 8000
 
-# El comando de inicio se define en docker-compose para mayor flexibilidad.
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Dar permisos de ejecución al script de arranque
+RUN chmod +x entrypoint.sh
+
+# El comando de inicio se define mediante el entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]

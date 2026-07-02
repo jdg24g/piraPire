@@ -1,0 +1,70 @@
+services:
+  redis-gtcarshop:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - gtcarshop_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gtcarshop-net
+
+  gtcarshop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${APP_IMAGE_NAME:-gtcarshop}:${APP_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      DEBUG: ${GTCARSHOP_DEBUG:-False}
+      SECRET_KEY: ${GTCARSHOP_SECRET_KEY:-django-insecure-gtcarshop-local-change-me}
+      ALLOWED_HOSTS: ${GTCARSHOP_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CSRF_TRUSTED_ORIGINS: ${GTCARSHOP_CSRF_TRUSTED_ORIGINS:-http://localhost:25603}
+      CORS_ALLOWED_ORIGINS: ${GTCARSHOP_CORS_ALLOWED_ORIGINS:-http://localhost:25603}
+      CORS_ALLOWED_ORIGIN_REGEXES: ${GTCARSHOP_CORS_ALLOWED_ORIGIN_REGEXES:-}
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-True}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-True}
+      TIME_ZONE: ${GTCARSHOP_TIME_ZONE:-America/Asuncion}
+      SQLITE_PATH: /app/db_volume/db.sqlite3
+      MEDIA_ROOT: /app/media
+      SERVE_STATIC: ${GTCARSHOP_SERVE_STATIC:-True}
+      SERVE_MEDIA: ${GTCARSHOP_SERVE_MEDIA:-True}
+      REDIS_URL: redis://redis-gtcarshop:6379/0
+      DJANGO_SUPERUSER_USERNAME: ${GTCARSHOP_SUPERUSER_USERNAME:-admin}
+      DJANGO_SUPERUSER_EMAIL: ${GTCARSHOP_SUPERUSER_EMAIL:-admin@gtcarshop.local}
+      DJANGO_SUPERUSER_PASSWORD: ${GTCARSHOP_SUPERUSER_PASSWORD:-}
+      SERVICE_NAME_REDIS: redis-gtcarshop
+    volumes:
+      - gtcarshop_db:/app/db_volume
+      - gtcarshop_media:/app/media
+      - gtcarshop_static:/app/staticfiles
+    depends_on:
+      redis-gtcarshop:
+        condition: service_healthy
+    networks:
+      - gtcarshop-net
+      - shared-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  gtcarshop_redis_data:
+  gtcarshop_db:
+  gtcarshop_media:
+  gtcarshop_static:
+
+networks:
+  gtcarshop-net:
+    driver: bridge
+  shared-net:
+    name: coolify
+    external: true
