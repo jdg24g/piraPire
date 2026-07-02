@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{% if object %}Editar Compra en Cuotas{% else %}Nueva Compra en Cuotas{% endif %} - PiraPire{% endblock %}
+{% block title %}{% if object %}Editar Compra{% else %}Nueva Compra{% endif %} - PiraPire{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto py-6">
@@ -10,14 +10,15 @@
             Volver al listado
         </a>
         <h1 class="text-3xl font-bold tracking-tight text-white">
-            {% if object %}Editar Compra en Cuotas{% else %}Registrar Compra en Cuotas{% endif %}
+            {% if object %}Editar Compra{% else %}Registrar Compra{% endif %}
         </h1>
-        <p class="text-slate-400 mt-1">Completa los datos de la compra financiada</p>
+        <p class="text-slate-400 mt-1">Completa los datos según el tipo de gasto</p>
     </div>
 
     <div class="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl relative">
         <form method="post" class="space-y-6">
             {% csrf_token %}
+            <input type="hidden" name="entry_type" value="{{ initial_mode|default:'cuotas' }}" data-entry-type>
             
             {% if form.errors %}
             <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
@@ -30,19 +31,16 @@
             </div>
             {% endif %}
 
-            <!-- Selector de Tipo de Registro -->
-            <div x-data="{ tipoRegistro: 'cuotas' }" class="mb-6">
+            <div data-installment-form data-initial-mode="{{ initial_mode|default:'cuotas' }}" class="mb-6">
                 <div class="flex p-1 bg-white/5 rounded-2xl border border-white/10 w-full sm:w-max mx-auto mb-6">
                     <button type="button" 
-                            @click="tipoRegistro = 'cuotas'" 
-                            :class="{'bg-purple-600 shadow-lg': tipoRegistro === 'cuotas', 'hover:bg-white/5 text-slate-400': tipoRegistro !== 'cuotas'}"
-                            class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-200">
+                            data-mode-option="cuotas"
+                            class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold transition-all duration-200">
                         Compra en Cuotas
                     </button>
                     <button type="button" 
-                            @click="tipoRegistro = 'fijo'" 
-                            :class="{'bg-purple-600 shadow-lg': tipoRegistro === 'fijo', 'hover:bg-white/5 text-slate-400': tipoRegistro !== 'fijo'}"
-                            class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-200">
+                            data-mode-option="fijo"
+                            class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold transition-all duration-200">
                         Gasto Fijo Mensual
                     </button>
                 </div>
@@ -72,7 +70,7 @@
             <!-- Grid de Monto Total y Cantidad de Cuotas -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <!-- Monto Total (Solo en Cuotas) -->
-                <div class="space-y-2" x-show="tipoRegistro === 'cuotas'">
+                <div class="space-y-2" data-mode-panel="cuotas">
                     <label for="{{ form.total_amount.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.total_amount.label }}</label>
                     {{ form.total_amount }}
                     <span class="text-xs text-slate-400 mt-1 block">Monto total de la compra.</span>
@@ -81,19 +79,19 @@
                 <!-- Valor de Cuota (En Gasto Fijo es el principal, en Cuotas es opcional) -->
                 <div class="space-y-2">
                     <label for="{{ form.installment_value.id_for_label }}" class="text-sm font-semibold text-slate-300">
-                        <span x-show="tipoRegistro === 'cuotas'">Valor de Cuota (Opcional)</span>
-                        <span x-show="tipoRegistro === 'fijo'">Monto Mensual (Obligatorio)</span>
+                        <span data-mode-label="cuotas">Valor de Cuota (Opcional)</span>
+                        <span data-mode-label="fijo" class="hidden">Monto Mensual (Obligatorio)</span>
                     </label>
                     {{ form.installment_value }}
-                    <span x-show="tipoRegistro === 'cuotas'" class="text-xs text-slate-400 mt-1 block">Si lo dejas vacío se calculará: Total / Cuotas.</span>
-                    <span x-show="tipoRegistro === 'fijo'" class="text-xs text-slate-400 mt-1 block">El Monto Total se calculará: Mensualidad * Meses.</span>
+                    <span data-mode-help="cuotas" class="text-xs text-slate-400 mt-1 block">Si lo dejas vacío se calculará: Total / Cuotas.</span>
+                    <span data-mode-help="fijo" class="hidden text-xs text-slate-400 mt-1">El Monto Total se calculará: Mensualidad * Meses.</span>
                 </div>
 
                 <!-- Cantidad de Cuotas -->
                 <div class="space-y-2">
                     <label for="{{ form.total_installments.id_for_label }}" class="text-sm font-semibold text-slate-300">
-                        <span x-show="tipoRegistro === 'cuotas'">Cantidad de Cuotas</span>
-                        <span x-show="tipoRegistro === 'fijo'">Duración (Meses)</span>
+                        <span data-mode-label="cuotas">Cantidad de Cuotas</span>
+                        <span data-mode-label="fijo" class="hidden">Duración (Meses)</span>
                     </label>
                     {{ form.total_installments }}
                 </div>
@@ -124,12 +122,59 @@
                 <a href="{% url 'installment_list' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
                     Cancelar
                 </a>
-                <button type="submit" @click="if(tipoRegistro === 'fijo') document.getElementById('{{ form.total_amount.id_for_label }}').value = ''" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
-                    Guardar Cambios
+                <button type="submit" data-submit-installment class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
+                    {% if object %}Guardar Cambios{% else %}Registrar{% endif %}
                 </button>
             </div>
-            </div> <!-- Cierre del x-data -->
+            </div>
         </form>
     </div>
 </div>
+<script>
+    (() => {
+        const root = document.querySelector('[data-installment-form]');
+        if (!root) return;
+
+        const totalAmountInput = document.getElementById('{{ form.total_amount.id_for_label }}');
+        const entryTypeInput = root.closest('form')?.querySelector('[data-entry-type]');
+        let currentMode = root.dataset.initialMode === 'fijo' ? 'fijo' : 'cuotas';
+
+        function setMode(mode) {
+            currentMode = mode;
+            root.querySelectorAll('[data-mode-option]').forEach(button => {
+                const active = button.dataset.modeOption === mode;
+                button.classList.toggle('bg-purple-600', active);
+                button.classList.toggle('shadow-lg', active);
+                button.classList.toggle('text-white', active);
+                button.classList.toggle('hover:bg-white/5', !active);
+                button.classList.toggle('text-slate-400', !active);
+            });
+            root.querySelectorAll('[data-mode-panel], [data-mode-label], [data-mode-help]').forEach(element => {
+                const targetMode = element.dataset.modePanel || element.dataset.modeLabel || element.dataset.modeHelp;
+                element.classList.toggle('hidden', targetMode !== mode);
+                if (element.dataset.modeHelp) {
+                    element.classList.toggle('block', targetMode === mode);
+                }
+            });
+            if (totalAmountInput) {
+                totalAmountInput.required = mode === 'cuotas';
+            }
+            if (entryTypeInput) {
+                entryTypeInput.value = mode;
+            }
+        }
+
+        root.querySelectorAll('[data-mode-option]').forEach(button => {
+            button.addEventListener('click', () => setMode(button.dataset.modeOption));
+        });
+
+        root.closest('form')?.addEventListener('submit', () => {
+            if (currentMode === 'fijo' && totalAmountInput) {
+                totalAmountInput.value = '';
+            }
+        });
+
+        setMode(currentMode);
+    })();
+</script>
 {% endblock %}

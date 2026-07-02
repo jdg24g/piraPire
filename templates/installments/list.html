@@ -10,9 +10,33 @@
         <p class="text-slate-400 mt-1">Monitorea tus pagos financiados a mediano y largo plazo</p>
     </div>
     
-    <a href="{% url 'installment_create' %}" class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-semibold text-sm transition-all duration-200 text-center shadow-lg shadow-indigo-600/20">
+    <button type="button" data-open-register-modal class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-semibold text-sm transition-all duration-200 text-center shadow-lg shadow-indigo-600/20">
         + Registrar Compra
-    </a>
+    </button>
+</div>
+
+<div data-register-modal class="hidden fixed inset-0 z-[70] items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+    <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#111827] p-5 shadow-2xl">
+        <div class="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Registrar compra</h2>
+                <p class="mt-1 text-sm text-slate-400">Elige el tipo de gasto para mostrar el formulario correcto.</p>
+            </div>
+            <button type="button" data-close-register-modal class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Cerrar modal">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 gap-3 pt-5 sm:grid-cols-2">
+            <a href="{% url 'installment_create' %}?type=fijo" class="rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:bg-white/10">
+                <span class="block text-sm font-bold text-white">Gasto Fijo Mensual</span>
+                <span class="mt-1 block text-xs leading-5 text-slate-400">Servicios, suscripciones o pagos mensuales por una duración definida.</span>
+            </a>
+            <a href="{% url 'installment_create' %}?type=cuotas" class="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4 text-left transition-colors hover:bg-purple-500/15">
+                <span class="block text-sm font-bold text-white">Compra en Cuotas</span>
+                <span class="mt-1 block text-xs leading-5 text-slate-400">Compras financiadas con monto total, cantidad de cuotas y progreso de pago.</span>
+            </a>
+        </div>
+    </div>
 </div>
 
 <!-- Listado de Compras en Cuotas -->
@@ -53,7 +77,17 @@
                 <p class="text-[10px] text-slate-400 text-right">Finaliza aprox. en: {{ inst.end_date|default:"—" }}</p>
             </div>
 
-            <div class="flex justify-end border-t border-white/5 pt-2">
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-white/5 pt-2">
+                {% if inst.status == 'ACTIVE' and inst.pending_installments > 0 %}
+                <form method="post" action="{% url 'installment_pay' inst.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="rounded-lg bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-300 transition-colors hover:bg-emerald-500/25">
+                        Pagar cuota
+                    </button>
+                </form>
+                {% else %}
+                <span class="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-500">Sin cuota pendiente</span>
+                {% endif %}
                 <a href="{% url 'installment_edit' inst.id %}" class="text-purple-400 hover:text-purple-300 font-bold text-xs">
                     Editar Compra
                 </a>
@@ -105,7 +139,19 @@
                         </span>
                     </td>
                     <td class="py-4 px-4 text-center whitespace-nowrap">
-                        <a href="{% url 'installment_edit' inst.id %}" class="text-purple-400 hover:text-purple-300 font-semibold text-xs transition-colors">Editar</a>
+                        <div class="flex items-center justify-center gap-3">
+                            {% if inst.status == 'ACTIVE' and inst.pending_installments > 0 %}
+                            <form method="post" action="{% url 'installment_pay' inst.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="text-emerald-400 hover:text-emerald-300 font-semibold text-xs transition-colors">
+                                    Pagar cuota
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-xs font-semibold text-slate-500">Pagado</span>
+                            {% endif %}
+                            <a href="{% url 'installment_edit' inst.id %}" class="text-purple-400 hover:text-purple-300 font-semibold text-xs transition-colors">Editar</a>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
@@ -117,4 +163,32 @@
         </table>
     </div>
 </div>
+<script>
+    (() => {
+        const modal = document.querySelector('[data-register-modal]');
+        const openButton = document.querySelector('[data-open-register-modal]');
+        if (!modal || !openButton) return;
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        openButton.addEventListener('click', openModal);
+        modal.querySelectorAll('[data-close-register-modal]').forEach(button => {
+            button.addEventListener('click', closeModal);
+        });
+        modal.addEventListener('click', event => {
+            if (event.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeModal();
+        });
+    })();
+</script>
 {% endblock %}

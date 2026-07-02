@@ -10,7 +10,7 @@ from reports.web_views import WebDashboardView, WebReportView
 from transactions.web_views import TransactionListView, TransactionCreateView, TransactionUpdateView
 from wallets.web_views import WalletListView, WalletCreateView, WalletUpdateView
 from categories.web_views import CategoryListView, CategoryCreateView, CategoryUpdateView
-from installments.web_views import InstallmentPurchaseListView, InstallmentPurchaseCreateView, InstallmentPurchaseUpdateView
+from installments.web_views import InstallmentPurchaseListView, InstallmentPurchaseCreateView, InstallmentPurchaseUpdateView, InstallmentPurchasePayView
 
 # ponytail: vista para redirigir la raíz del sitio
 def root_redirect_view(request):
@@ -45,6 +45,7 @@ urlpatterns = [
     path('installments/', InstallmentPurchaseListView.as_view(), name='installment_list'),
     path('installments/new/', InstallmentPurchaseCreateView.as_view(), name='installment_create'),
     path('installments/<int:pk>/edit/', InstallmentPurchaseUpdateView.as_view(), name='installment_edit'),
+    path('installments/<int:pk>/pay/', InstallmentPurchasePayView.as_view(), name='installment_pay'),
     
     path('reports/', WebReportView.as_view(), name='report_list'),
 ]

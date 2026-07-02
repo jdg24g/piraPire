@@ -28,7 +28,7 @@ class InstallmentPurchaseForm(forms.ModelForm):
             'total_installments': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-md'}),
             'installment_value': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-md', 'step': '0.01'}),
             'paid_installments': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-md'}),
-            'start_date': forms.DateInput(attrs={'class': 'w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-md', 'type': 'date'}),
+            'start_date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-md', 'type': 'date'}),
             'status': forms.Select(attrs={'class': 'w-full px-4 py-2 rounded-xl bg-slate-800 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500'}),
         }
 
@@ -52,6 +52,10 @@ class InstallmentPurchaseForm(forms.ModelForm):
         total_amount = cleaned_data.get('total_amount')
         total_installments = cleaned_data.get('total_installments')
         installment_value = cleaned_data.get('installment_value')
+        paid_installments = cleaned_data.get('paid_installments') or 0
+
+        if total_installments and paid_installments > total_installments:
+            raise forms.ValidationError("Las cuotas pagadas no pueden superar la cantidad total de cuotas.")
 
         if not total_amount:
             if not installment_value or not total_installments:
