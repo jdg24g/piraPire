@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Categorías - PiraPire{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight text-white">Categorías</h1>
+        <p class="text-slate-400 mt-1">Clasifica tus ingresos y gastos de forma organizada</p>
+    </div>
+    
+    <a href="{% url 'category_create' %}" class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-semibold text-sm transition-all duration-200 text-center shadow-lg shadow-indigo-600/20">
+        + Nueva Categoría
+    </a>
+</div>
+
+<!-- Grid de Categorías -->
+<div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+    <!-- Tabla de Categorías -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                    <th class="py-3 px-4">Nombre</th>
+                    <th class="py-3 px-4">Aplica A</th>
+                    <th class="py-3 px-4">Categoría Padre</th>
+                    <th class="py-3 px-4">Origen</th>
+                    <th class="py-3 px-4">Estado</th>
+                    <th class="py-3 px-4 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-sm">
+                {% for cat in categories %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="py-4 px-4 font-bold text-white whitespace-nowrap">{{ cat.name }}</td>
+                    <td class="py-4 px-4">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold 
+                            {% if cat.applies_to == 'INCOME' %}bg-emerald-500/10 text-emerald-400
+                            {% elif cat.applies_to == 'EXPENSE' %}bg-rose-500/10 text-rose-400
+                            {% else %}bg-blue-500/10 text-blue-400{% endif %}">
+                            {{ cat.get_applies_to_display }}
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-slate-400 font-medium">
+                        {{ cat.parent.name|default:"—" }}
+                    </td>
+                    <td class="py-4 px-4">
+                        {% if cat.is_default %}
+                        <span class="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2 py-0.5 rounded text-xs font-medium">Predeterminada</span>
+                        {% else %}
+                        <span class="bg-purple-500/10 border border-purple-500/20 text-purple-300 px-2 py-0.5 rounded text-xs font-medium">Personalizada</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="inline-flex h-2.5 w-2.5 rounded-full {% if cat.is_active %}bg-emerald-400{% else %}bg-slate-500{% endif %}" title="{% if cat.is_active %}Activa{% else %}Inactiva{% endif %}"></span>
+                    </td>
+                    <td class="py-4 px-4 text-center whitespace-nowrap">
+                        {% if not cat.is_default %}
+                        <a href="{% url 'category_edit' cat.id %}" class="text-purple-400 hover:text-purple-300 font-semibold text-xs transition-colors">Editar</a>
+                        {% else %}
+                        <span class="text-slate-500 text-xs cursor-not-allowed" title="Las categorías predeterminadas del sistema no se pueden editar.">Solo lectura</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="py-6 text-center text-slate-400">No hay categorías configuradas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

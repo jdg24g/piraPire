@@ -1,0 +1,54 @@
+from rest_framework import serializers
+from .models import Transaction
+from wallets.models import Wallet
+from categories.models import Category
+
+
+class TransactionSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    wallet_name = serializers.CharField(source='wallet.name', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = [
+            'id', 'user', 'wallet', 'wallet_name', 'category', 
+            'category_name', 'type', 'subtype', 'amount', 
+            'date', 'description', 'created_at', 'updated_at'
+        ]
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("El monto debe ser mayor que cero.")
+        return value
+
+    def validate(self, data):
+        user = self.context['request'].user
+
+        # Validar que la cuenta pertenezca al usuario
+        wallet = data.get('wallet')
+        if wallet and wallet.user != user:
+            raise serializers.ValidationError({"wallet": "La cuenta seleccionada no le pertenece."})
+
+        # Validar que la categoría sea del usuario o predeterminada
+        category = data.get('category')
+        if category and not category.is_default and category.user != user:
+            raise serializers.ValidationError({"category": "La categoría seleccionada no le pertenece."})
+
+        # Validar consistencia entre type y subtype
+        t_type = data.get('type')
+        subtype = data.get('subtype')
+        
+        income_subtypes = ['UNIQUE', 'RECURRENT', 'VARIABLE']
+        expense_subtypes = ['NORMAL', 'FIXED', 'VARIABLE_FIXED', 'INSTALLMENT']
+
+        if t_type == 'INCOME' and subtype not in income_subtypes:
+            raise serializers.ValidationError(
+                {"subtype": f"Para un ingreso, el subtipo debe ser uno de: {', '.join(income_subtypes)}"}
+            )
+        elif t_type == 'EXPENSE' and subtype not in expense_subtypes:
+            raise serializers.ValidationError(
+                {"subtype": f"Para un gasto, el subtipo debe ser uno de: {', '.join(expense_subtypes)}"}
+            )
+
+        return data

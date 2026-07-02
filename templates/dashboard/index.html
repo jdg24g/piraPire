@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}Dashboard - PiraPire{% endblock %}
+
+{% block content %}
+<!-- Cabecera del Dashboard -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight text-white">Resumen Financiero</h1>
+        <p class="text-slate-400 mt-1">Monitorea tus ingresos, gastos y cuotas activas</p>
+    </div>
+    
+    <!-- Filtro de Fecha -->
+    <form method="get" class="flex gap-2 w-full md:w-auto">
+        <select name="month" class="px-4 py-2 rounded-xl bg-slate-800 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+            <option value="1" {% if month == 1 %}selected{% endif %}>Enero</option>
+            <option value="2" {% if month == 2 %}selected{% endif %}>Febrero</option>
+            <option value="3" {% if month == 3 %}selected{% endif %}>Marzo</option>
+            <option value="4" {% if month == 4 %}selected{% endif %}>Abril</option>
+            <option value="5" {% if month == 5 %}selected{% endif %}>Mayo</option>
+            <option value="6" {% if month == 6 %}selected{% endif %}>Junio</option>
+            <option value="7" {% if month == 7 %}selected{% endif %}>Julio</option>
+            <option value="8" {% if month == 8 %}selected{% endif %}>Agosto</option>
+            <option value="9" {% if month == 9 %}selected{% endif %}>Septiembre</option>
+            <option value="10" {% if month == 10 %}selected{% endif %}>Octubre</option>
+            <option value="11" {% if month == 11 %}selected{% endif %}>Noviembre</option>
+            <option value="12" {% if month == 12 %}selected{% endif %}>Diciembre</option>
+        </select>
+        <select name="year" class="px-4 py-2 rounded-xl bg-slate-800 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+            <option value="2025" {% if year == 2025 %}selected{% endif %}>2025</option>
+            <option value="2026" {% if year == 2026 %}selected{% endif %}>2026</option>
+            <option value="2027" {% if year == 2027 %}selected{% endif %}>2027</option>
+        </select>
+        <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-medium text-sm transition-colors">
+            Filtrar
+        </button>
+    </form>
+</div>
+
+<!-- Grid de Tarjetas (Cards) Principales -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    
+    <!-- Balance -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-semibold text-slate-400">Balance del Mes</span>
+            <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-3xl font-bold tracking-tight text-white mb-1">
+                {{ data.balance|gs_format }}
+            </h3>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full {% if data.balance >= 0 %}bg-emerald-500/10 text-emerald-400{% else %}bg-rose-500/10 text-rose-400{% endif %}">
+                {% if data.balance >= 0 %}Superávit{% else %}Déficit{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- Ingresos del Mes -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-semibold text-slate-400">Ingresos Totales</span>
+            <div class="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-3xl font-bold tracking-tight text-emerald-400 mb-1">{{ data.total_income|gs_format }}</h3>
+            <span class="text-xs text-slate-400">Recibidos este período</span>
+        </div>
+    </div>
+
+    <!-- Gastos del Mes -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-semibold text-slate-400">Gastos Totales</span>
+            <div class="p-2 bg-rose-500/10 rounded-lg text-rose-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-3xl font-bold tracking-tight text-rose-400 mb-1">{{ data.total_expense|gs_format }}</h3>
+            <span class="text-xs text-slate-400">Promedio diario: {{ data.daily_expense_average|gs_format }}</span>
+        </div>
+    </div>
+
+    <!-- Gastos Fijos -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex flex-col justify-between">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-semibold text-slate-400">Gastos Fijos</span>
+            <div class="p-2 bg-amber-500/10 rounded-lg text-amber-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-2xl font-bold text-white mb-1">{{ data.fixed_expenses|gs_format }}</h3>
+            <p class="text-xs text-slate-400">Variables Fijos: {{ data.variable_fixed_expenses|gs_format }}</p>
+        </div>
+    </div>
+
+    <!-- Cuotas del Mes -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex flex-col justify-between">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-semibold text-slate-400">Cuotas de este Mes</span>
+            <div class="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-2xl font-bold text-white mb-1">{{ data.installment_expenses|gs_format }}</h3>
+            <span class="text-xs text-slate-400">De compras financiadas</span>
+        </div>
+    </div>
+
+    <!-- Top Categoría -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex flex-col justify-between">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-semibold text-slate-400">Mayor Gasto en</span>
+            <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-2xl font-bold text-white mb-1 truncate">{{ data.top_expense_category|default:"Sin gastos" }}</h3>
+            <span class="text-xs text-slate-400">Cuenta top: {{ data.top_wallet|default:"-" }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    
+    <!-- Distribución de Gastos -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Gastos por Categoría</h3>
+        <div class="relative h-64 flex justify-center">
+            <canvas id="categoryChart"></canvas>
+            <div id="noCategoryData" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
+                No hay gastos registrados en este mes.
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparativa General -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Ingresos vs Gastos</h3>
+        <div class="relative h-64 flex justify-center">
+            <canvas id="summaryChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Últimos Movimientos -->
+<div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h3 class="text-xl font-bold text-white">Últimos Movimientos</h3>
+            <p class="text-slate-400 text-xs mt-0.5">Últimas 5 transacciones registradas</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'transaction_create' %}?type=EXPENSE" class="px-3.5 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/20 rounded-xl text-rose-300 text-xs font-semibold transition-colors">
+                + Gasto
+            </a>
+            <a href="{% url 'transaction_create' %}?type=INCOME" class="px-3.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs font-semibold transition-colors">
+                + Ingreso
+            </a>
+            <a href="{% url 'transaction_list' %}" class="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 text-xs font-semibold transition-colors">
+                Ver todos
+            </a>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                    <th class="py-3 px-4">Fecha</th>
+                    <th class="py-3 px-4">Detalle</th>
+                    <th class="py-3 px-4">Cuenta</th>
+                    <th class="py-3 px-4 text-right">Monto</th>
+                    <th class="py-3 px-4 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-sm">
+                {% for tx in data.recent_transactions %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="py-4 px-4 text-slate-400 font-medium whitespace-nowrap">{{ tx.date }}</td>
+                    <td class="py-4 px-4">
+                        <div>
+                            <p class="font-semibold text-white">{{ tx.description|default:"Sin descripción" }}</p>
+                            <span class="text-xs bg-white/10 px-2 py-0.5 rounded text-slate-300">{{ tx.category__name }}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4 text-slate-300">{{ tx.wallet__name }}</td>
+                    <td class="py-4 px-4 text-right font-bold whitespace-nowrap {% if tx.type == 'INCOME' %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                        {% if tx.type == 'INCOME' %}+{% else %}-{% endif %}{{ tx.amount|gs_format }}
+                    </td>
+                    <td class="py-4 px-4 text-center whitespace-nowrap">
+                        <a href="{% url 'transaction_edit' tx.id %}" class="text-purple-400 hover:text-purple-300 font-semibold text-xs">Editar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="py-6 text-center text-slate-400">No hay movimientos registrados recientemente.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function initDashboardCharts() {
+    loadPiraChart().then(() => {
+    // Inicialización de Gráficos usando los datos inyectados por Django
+    const categoryData = {{ category_expenses_json|safe }};
+    const summaryData = {{ summary_json|safe }};
+    
+    // 1. Gráfico de Categorías
+    if (categoryData.length === 0) {
+        document.getElementById('noCategoryData').classList.remove('hidden');
+        document.getElementById('categoryChart').style.display = 'none';
+    } else {
+        const catLabels = categoryData.map(item => item.category__name);
+        const catTotals = categoryData.map(item => parseFloat(item.total));
+        
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catTotals,
+                    backgroundColor: [
+                        '#8b5cf6', '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'
+                    ],
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#cbd5e1', font: { family: 'system-ui', size: 12 } }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Gráfico Resumen Ingresos vs Gastos
+    const income = summaryData.total_income || 0;
+    const expense = summaryData.total_expense || 0;
+    
+    new Chart(document.getElementById('summaryChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Ingresos', 'Gastos'],
+            datasets: [{
+                data: [income, expense],
+                backgroundColor: ['#10b981', '#ef4444'],
+                borderRadius: 12,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#cbd5e1', font: { family: 'system-ui' } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#cbd5e1', font: { family: 'system-ui', size: 13 } }
+                }
+            }
+        }
+    });
+    });
+    }
+
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(initDashboardCharts, { timeout: 1500 });
+    } else {
+        setTimeout(initDashboardCharts, 250);
+    }
+</script>
+{% endblock %}

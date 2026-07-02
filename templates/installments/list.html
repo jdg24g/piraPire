@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}Compras en Cuotas - PiraPire{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight text-white">Compras en Cuotas</h1>
+        <p class="text-slate-400 mt-1">Monitorea tus pagos financiados a mediano y largo plazo</p>
+    </div>
+    
+    <a href="{% url 'installment_create' %}" class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-semibold text-sm transition-all duration-200 text-center shadow-lg shadow-indigo-600/20">
+        + Registrar Compra
+    </a>
+</div>
+
+<!-- Listado de Compras en Cuotas -->
+<div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+    
+    <!-- VISTA MÓVIL (Cards) -->
+    <div class="block md:hidden space-y-4">
+        {% for inst in installments %}
+        <div class="p-4 bg-white/5 rounded-2xl border border-white/5 relative">
+            <div class="flex justify-between items-start mb-2">
+                <span class="text-xs text-slate-400 font-medium">Inicio: {{ inst.start_date }}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold 
+                    {% if inst.status == 'ACTIVE' %}bg-purple-500/15 border border-purple-500/20 text-purple-300
+                    {% elif inst.status == 'COMPLETED' %}bg-emerald-500/15 border border-emerald-500/20 text-emerald-300
+                    {% else %}bg-slate-500/15 border border-slate-500/20 text-slate-400{% endif %}">
+                    {{ inst.get_status_display }}
+                </span>
+            </div>
+            
+            <div class="mb-3">
+                <h3 class="font-bold text-white text-base truncate">{{ inst.product_name }}</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Total: {{ inst.total_amount|gs_format }} | Cuota: {{ inst.installment_value|gs_format }}</p>
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                    <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-slate-300">{{ inst.wallet.name }}</span>
+                    <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-slate-300">{{ inst.category.name }}</span>
+                </div>
+            </div>
+
+            <!-- Progreso de Cuotas -->
+            <div class="space-y-1.5 mb-4">
+                <div class="flex justify-between text-xs font-semibold text-slate-300">
+                    <span>Progreso: {{ inst.paid_installments }}/{{ inst.total_installments }} cuotas</span>
+                    <span>{{ inst.paid_percentage }}%</span>
+                </div>
+                <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                    <div class="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full" style="width: {{ inst.paid_percentage }}%"></div>
+                </div>
+                <p class="text-[10px] text-slate-400 text-right">Finaliza aprox. en: {{ inst.end_date|default:"—" }}</p>
+            </div>
+
+            <div class="flex justify-end border-t border-white/5 pt-2">
+                <a href="{% url 'installment_edit' inst.id %}" class="text-purple-400 hover:text-purple-300 font-bold text-xs">
+                    Editar Compra
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-center text-slate-400 py-6 text-sm">No has registrado compras en cuotas todavía.</p>
+        {% endfor %}
+    </div>
+
+    <!-- VISTA ESCRITORIO (Tabla) -->
+    <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                    <th class="py-3 px-4">Producto/Servicio</th>
+                    <th class="py-3 px-4">Cuenta</th>
+                    <th class="py-3 px-4">Monto Total</th>
+                    <th class="py-3 px-4">Valor Cuota</th>
+                    <th class="py-3 px-4">Progreso de Cuotas</th>
+                    <th class="py-3 px-4">Finalización</th>
+                    <th class="py-3 px-4">Estado</th>
+                    <th class="py-3 px-4 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-sm">
+                {% for inst in installments %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="py-4 px-4 font-bold text-white max-w-xs truncate">{{ inst.product_name }}</td>
+                    <td class="py-4 px-4 text-slate-300">{{ inst.wallet.name }}</td>
+                    <td class="py-4 px-4 text-white font-semibold">{{ inst.total_amount|gs_format }}</td>
+                    <td class="py-4 px-4 text-slate-400">{{ inst.installment_value|gs_format }}</td>
+                    <td class="py-4 px-4 min-w-[150px]">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-semibold text-slate-300 whitespace-nowrap">{{ inst.paid_installments }}/{{ inst.total_installments }}</span>
+                            <div class="w-24 bg-white/10 rounded-full h-2 overflow-hidden">
+                                <div class="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full" style="width: {{ inst.paid_percentage }}%"></div>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">{{ inst.paid_percentage }}%</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4 text-slate-400 text-xs">{{ inst.end_date|default:"—" }}</td>
+                    <td class="py-4 px-4">
+                        <span class="px-2 py-0.5 rounded text-xs font-semibold 
+                            {% if inst.status == 'ACTIVE' %}bg-purple-500/10 border border-purple-500/20 text-purple-300
+                            {% elif inst.status == 'COMPLETED' %}bg-emerald-500/10 border border-emerald-500/20 text-emerald-300
+                            {% else %}bg-slate-500/10 border border-slate-500/20 text-slate-400{% endif %}">
+                            {{ inst.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-center whitespace-nowrap">
+                        <a href="{% url 'installment_edit' inst.id %}" class="text-purple-400 hover:text-purple-300 font-semibold text-xs transition-colors">Editar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="py-6 text-center text-slate-400">No has registrado compras en cuotas todavía.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

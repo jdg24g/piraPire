@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar Categoría{% else %}Nueva Categoría{% endif %} - PiraPire{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6">
+    <div class="mb-6">
+        <a href="{% url 'category_list' %}" class="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-semibold mb-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Volver al listado
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight text-white">
+            {% if object %}Editar Categoría{% else %}Crear Categoría{% endif %}
+        </h1>
+        <p class="text-slate-400 mt-1">Completa los datos de la categoría</p>
+    </div>
+
+    <div class="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
+                <p class="font-bold mb-1">Por favor corrige los siguientes errores:</p>
+                <ul class="list-disc list-inside">
+                    {% for field, errors in form.errors.items %}
+                    <li><strong>{{ field|capfirst }}:</strong> {{ errors|join:", " }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Nombre de la Categoría -->
+            <div class="space-y-2">
+                <label for="{{ form.name.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.name.label }}</label>
+                {{ form.name }}
+            </div>
+
+            <!-- Grid de Aplica A y Categoría Padre -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Aplica A -->
+                <div class="space-y-2">
+                    <label for="{{ form.applies_to.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.applies_to.label }}</label>
+                    {{ form.applies_to }}
+                </div>
+
+                <!-- Categoría Padre -->
+                <div class="space-y-2">
+                    <label for="{{ form.parent.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.parent.label }}</label>
+                    {{ form.parent }}
+                </div>
+            </div>
+
+            <!-- Activa / Inactiva -->
+            <div class="flex items-center gap-3">
+                {{ form.is_active }}
+                <label for="{{ form.is_active.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.is_active.label }}</label>
+            </div>
+
+            <div class="flex justify-end gap-3 border-t border-white/5 pt-6">
+                <a href="{% url 'category_list' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

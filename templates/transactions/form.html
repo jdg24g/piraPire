@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar Movimiento{% else %}Nuevo Movimiento{% endif %} - PiraPire{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6">
+    <div class="mb-6">
+        <a href="{% url 'transaction_list' %}" class="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-semibold mb-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Volver al listado
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight text-white">
+            {% if object %}Editar Movimiento{% else %}Registrar Movimiento{% endif %}
+        </h1>
+        <p class="text-slate-400 mt-1">Completa los datos de la transacción</p>
+    </div>
+
+    <div class="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
+                <p class="font-bold mb-1">Por favor corrige los siguientes errores:</p>
+                <ul class="list-disc list-inside">
+                    {% for field, errors in form.errors.items %}
+                    <li><strong>{{ field|capfirst }}:</strong> {{ errors|join:", " }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Grid de Tipo y Subtipo -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Tipo -->
+                <div class="space-y-2">
+                    <label for="{{ form.type.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.type.label }}</label>
+                    {{ form.type }}
+                </div>
+
+                <!-- Subtipo -->
+                <div class="space-y-2">
+                    <label for="{{ form.subtype.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.subtype.label }}</label>
+                    {{ form.subtype }}
+                </div>
+            </div>
+
+            <!-- Grid de Cuenta y Categoría -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Cuenta -->
+                <div class="space-y-2">
+                    <label for="{{ form.wallet.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.wallet.label }}</label>
+                    {{ form.wallet }}
+                    {% if not form.wallet.field.queryset.exists %}
+                    <p class="text-xs text-amber-400 mt-1 font-medium">No tienes cuentas activas. <a href="{% url 'wallet_create' %}" class="underline text-purple-400 hover:text-purple-300">Crear una cuenta</a> primero.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Categoría -->
+                <div class="space-y-2">
+                    <label for="{{ form.category.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.category.label }}</label>
+                    {{ form.category }}
+                </div>
+            </div>
+
+            <!-- Grid de Monto y Fecha -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Monto -->
+                <div class="space-y-2">
+                    <label for="{{ form.amount.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.amount.label }}</label>
+                    {{ form.amount }}
+                </div>
+
+                <!-- Fecha -->
+                <div class="space-y-2">
+                    <label for="{{ form.date.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.date.label }}</label>
+                    {{ form.date }}
+                </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="space-y-2">
+                <label for="{{ form.description.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.description.label }}</label>
+                {{ form.description }}
+            </div>
+
+            <div class="flex justify-end gap-3 border-t border-white/5 pt-6">
+                <a href="{% url 'transaction_list' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lógica interactiva para cambiar dinámicamente los subtipos en base al tipo -->
+<script>
+    function initTransactionSubtypeFilter() {
+        const typeSelect = document.getElementById('id_type');
+        const subtypeSelect = document.getElementById('id_subtype');
+        if (!typeSelect || !subtypeSelect || subtypeSelect.dataset.filterReady === 'true') return;
+        subtypeSelect.dataset.filterReady = 'true';
+        
+        // Guardar todos los subtipos originales en una constante
+        const originalSubtypes = Array.from(subtypeSelect.options).map(opt => ({
+            value: opt.value,
+            text: opt.text
+        }));
+
+        const incomeSubtypes = ['UNIQUE', 'RECURRENT', 'VARIABLE'];
+        const expenseSubtypes = ['NORMAL', 'FIXED', 'VARIABLE_FIXED', 'INSTALLMENT'];
+
+        function filterSubtypes() {
+            const selectedType = typeSelect.value;
+            const currentSelectedValue = subtypeSelect.value;
+            
+            // Limpiar opciones
+            subtypeSelect.innerHTML = '';
+            
+            // Filtrar y agregar las opciones válidas
+            const allowedKeys = selectedType === 'INCOME' ? incomeSubtypes : expenseSubtypes;
+            
+            let firstValid = null;
+            originalSubtypes.forEach(opt => {
+                if (allowedKeys.includes(opt.value)) {
+                    const newOpt = document.createElement('option');
+                    newOpt.value = opt.value;
+                    newOpt.text = opt.text;
+                    if (opt.value === currentSelectedValue) {
+                        newOpt.selected = true;
+                    }
+                    subtypeSelect.appendChild(newOpt);
+                    if (!firstValid) firstValid = opt.value;
+                }
+            });
+
+            // Si el valor seleccionado previamente ya no es válido, autoseleccionar el primero permitido
+            if (!allowedKeys.includes(currentSelectedValue) && firstValid) {
+                subtypeSelect.value = firstValid;
+            }
+        }
+
+        // Ejecutar al cargar y al cambiar de tipo
+        typeSelect.addEventListener('change', filterSubtypes);
+        filterSubtypes();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTransactionSubtypeFilter);
+    } else {
+        initTransactionSubtypeFilter();
+    }
+</script>
+{% endblock %}

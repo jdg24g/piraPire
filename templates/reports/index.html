@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}Reportes - PiraPire{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight text-white">Análisis y Reportes</h1>
+        <p class="text-slate-400 mt-1">Visualiza e interpreta la distribución de tu dinero</p>
+    </div>
+    
+    <!-- Botón Exportar CSV -->
+    <a href="/api/exports/transactions/csv/?date_from={{ filters.date_from|default:'' }}&date_to={{ filters.date_to|default:'' }}&wallet={{ filters.wallet|default:'' }}&category={{ filters.category|default:'' }}&type={{ filters.type|default:'' }}&subtype={{ filters.subtype|default:'' }}" 
+       class="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-slate-300 font-semibold text-sm transition-colors text-center flex items-center justify-center gap-2 shadow-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Exportar CSV Filtrado
+    </a>
+</div>
+
+<!-- Filtros de Reportes -->
+<div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl mb-8">
+    <form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Fecha Desde -->
+        <div class="space-y-1">
+            <label class="text-xs font-semibold text-slate-400">Fecha Desde</label>
+            <input type="date" name="date_from" value="{{ filters.date_from|default:'' }}" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+        </div>
+        
+        <!-- Fecha Hasta -->
+        <div class="space-y-1">
+            <label class="text-xs font-semibold text-slate-400">Fecha Hasta</label>
+            <input type="date" name="date_to" value="{{ filters.date_to|default:'' }}" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+        </div>
+
+        <!-- Cuenta -->
+        <div class="space-y-1">
+            <label class="text-xs font-semibold text-slate-400">Cuenta</label>
+            <select name="wallet" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                <option value="">Todas</option>
+                {% for wallet in wallets %}
+                <option value="{{ wallet.id }}" {% if filters.wallet == wallet.id|stringformat:"s" %}selected{% endif %}>{{ wallet.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Categoría -->
+        <div class="space-y-1">
+            <label class="text-xs font-semibold text-slate-400">Categoría</label>
+            <select name="category" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                <option value="">Todas</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if filters.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="md:col-span-4 flex justify-end gap-2 mt-2">
+            <a href="{% url 'report_list' %}" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 font-semibold text-sm transition-colors">
+                Limpiar Filtros
+            </a>
+            <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-semibold text-sm transition-colors">
+                Generar Reporte
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Resumen Consolidado -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+    <!-- Ingresos Totales -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex items-center justify-between">
+        <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ingresos Filtrados</span>
+            <h3 class="text-2xl font-bold text-emerald-400 mt-1">{{ summary.total_income|gs_format }}</h3>
+        </div>
+        <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+    </div>
+    
+    <!-- Gastos Totales -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex items-center justify-between">
+        <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gastos Filtrados</span>
+            <h3 class="text-2xl font-bold text-rose-400 mt-1">{{ summary.total_expense|gs_format }}</h3>
+        </div>
+        <div class="p-3 bg-rose-500/10 rounded-xl text-rose-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+        </div>
+    </div>
+
+    <!-- Balance Neto -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl flex items-center justify-between">
+        <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Balance Neto</span>
+            <h3 class="text-2xl font-bold text-white mt-1">
+                {{ summary.balance|gs_format }}
+            </h3>
+        </div>
+        <div class="p-3 bg-blue-500/10 rounded-xl text-blue-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"/></svg>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos Principales -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Distribución de Gastos -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Gastos por Categoría</h3>
+        <div class="relative h-64 flex justify-center">
+            <canvas id="categoryChart"></canvas>
+            <div id="noCategoryData" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
+                No hay transacciones registradas de tipo Gasto.
+            </div>
+        </div>
+    </div>
+
+    <!-- Gastos por Cuenta -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Gastos por Cuenta</h3>
+        <div class="relative h-64 flex justify-center">
+            <canvas id="walletChart"></canvas>
+            <div id="noWalletData" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
+                No hay transacciones asociadas a cuentas.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tablas de Desglose de Gastos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Agrupación por Categoría -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+        <h3 class="text-lg font-bold text-white mb-4">Desglose por Categoría</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                        <th class="py-2.5 px-4">Categoría</th>
+                        <th class="py-2.5 px-4">Tipo</th>
+                        <th class="py-2.5 px-4 text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-sm">
+                    {% for item in by_category %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="py-3.5 px-4 font-bold text-white">{{ item.category__name }}</td>
+                        <td class="py-3.5 px-4">
+                            <span class="px-2 py-0.5 rounded text-xs font-semibold 
+                                {% if item.type == 'INCOME' %}bg-emerald-500/10 text-emerald-400{% else %}bg-rose-500/10 text-rose-400{% endif %}">
+                                {{ item.type }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-bold text-white">{{ item.total|gs_format }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="py-6 text-center text-slate-400">Sin datos de categorías.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Agrupación por Cuenta -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
+        <h3 class="text-lg font-bold text-white mb-4">Desglose por Cuenta</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                        <th class="py-2.5 px-4">Cuenta</th>
+                        <th class="py-2.5 px-4">Tipo</th>
+                        <th class="py-2.5 px-4 text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-sm">
+                    {% for item in by_wallet %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="py-3.5 px-4 font-bold text-white">{{ item.wallet__name }}</td>
+                        <td class="py-3.5 px-4">
+                            <span class="px-2 py-0.5 rounded text-xs font-semibold 
+                                {% if item.type == 'INCOME' %}bg-emerald-500/10 text-emerald-400{% else %}bg-rose-500/10 text-rose-400{% endif %}">
+                                {{ item.type }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-bold text-white">{{ item.total|gs_format }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="py-6 text-center text-slate-400">Sin datos de cuentas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function initReportCharts() {
+    loadPiraChart().then(() => {
+    // Inyección de datos
+    const byCategoryData = {{ by_category_json|safe }};
+    const byWalletData = {{ by_wallet_json|safe }};
+
+    // 1. Gráfico por Categoría
+    const expensesByCategory = byCategoryData.filter(item => item.type === 'EXPENSE');
+    if (expensesByCategory.length === 0) {
+        document.getElementById('noCategoryData').classList.remove('hidden');
+        document.getElementById('categoryChart').style.display = 'none';
+    } else {
+        const labels = expensesByCategory.map(item => item.category__name);
+        const data = expensesByCategory.map(item => parseFloat(item.total));
+        
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#8b5cf6', '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'],
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#cbd5e1', font: { family: 'system-ui', size: 12 } }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Gráfico por Cuenta (Gastos)
+    const expensesByWallet = byWalletData.filter(item => item.type === 'EXPENSE');
+    if (expensesByWallet.length === 0) {
+        document.getElementById('noWalletData').classList.remove('hidden');
+        document.getElementById('walletChart').style.display = 'none';
+    } else {
+        const labels = expensesByWallet.map(item => item.wallet__name);
+        const data = expensesByWallet.map(item => parseFloat(item.total));
+        
+        new Chart(document.getElementById('walletChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: '#6366f1',
+                    borderRadius: 8,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#cbd5e1', font: { family: 'system-ui' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#cbd5e1', font: { family: 'system-ui' } }
+                    }
+                }
+            }
+        });
+    }
+    });
+    }
+
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(initReportCharts, { timeout: 1500 });
+    } else {
+        setTimeout(initReportCharts, 250);
+    }
+</script>
+{% endblock %}

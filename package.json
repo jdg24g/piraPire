@@ -1,0 +1,16 @@
+{
+  "name": "pirapire",
+  "version": "1.0.0",
+  "description": "Aplicación backend para el análisis de finanzas personales. Ayuda al usuario a entender en qué gasta su dinero, cuánto ingresa, cuáles son sus gastos fijos, cuánto paga en cuotas y cómo evolucionan sus finanzas en el tiempo.",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "mkdir -p ./static/css ./staticfiles/css && tailwindcss -c tailwind.config.js -i ./assets/css/input.css -o ./static/css/app.css --minify && cp ./static/css/app.css ./staticfiles/css/app.css",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

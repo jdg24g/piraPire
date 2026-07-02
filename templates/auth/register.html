@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear Cuenta - PiraPire{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex flex-col justify-center items-center px-4 py-8">
+    <div class="absolute w-72 h-72 bg-purple-500/20 rounded-full blur-3xl -translate-x-32 -translate-y-20 pointer-events-none"></div>
+    <div class="absolute w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl translate-x-32 translate-y-20 pointer-events-none"></div>
+
+    <div class="w-full max-w-md glass-card rounded-3xl border border-white/10 p-8 shadow-2xl relative z-10">
+        <div class="text-center mb-8">
+            <div class="inline-flex p-3 bg-gradient-to-tr from-purple-500 to-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/20 mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                </svg>
+            </div>
+            <h2 class="text-3xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">Crea tu cuenta</h2>
+            <p class="text-slate-400 mt-2 text-sm">Comienza a controlar tus finanzas hoy mismo</p>
+        </div>
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
+                {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Campo Usuario -->
+            <div class="space-y-1">
+                <label for="id_username" class="text-sm font-semibold text-slate-300">Nombre de usuario</label>
+                <input type="text" name="username" id="id_username" required value="{{ form.username.value|default:'' }}"
+                       class="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 backdrop-blur-md" 
+                       placeholder="Ej. minombre">
+                {% if form.username.errors %}
+                <span class="text-xs text-rose-400 font-medium">{{ form.username.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Campo Correo -->
+            <div class="space-y-1">
+                <label for="id_email" class="text-sm font-semibold text-slate-300">Correo electrónico</label>
+                <input type="email" name="email" id="id_email" required value="{{ form.email.value|default:'' }}"
+                       class="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 backdrop-blur-md" 
+                       placeholder="Ej. correo@ejemplo.com">
+                {% if form.email.errors %}
+                <span class="text-xs text-rose-400 font-medium">{{ form.email.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Campo Contraseña -->
+            <div class="space-y-1">
+                <label for="id_password1" class="text-sm font-semibold text-slate-300">Contraseña</label>
+                <input type="password" name="password1" id="id_password1" required
+                       class="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 backdrop-blur-md" 
+                       placeholder="••••••••">
+                {% if form.password1.errors %}
+                <span class="text-xs text-rose-400 font-medium">{{ form.password1.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Campo Confirmar Contraseña -->
+            <div class="space-y-1">
+                <label for="id_password2" class="text-sm font-semibold text-slate-300">Confirmar contraseña</label>
+                <input type="password" name="password2" id="id_password2" required
+                       class="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 backdrop-blur-md" 
+                       placeholder="••••••••">
+                {% if form.password2.errors %}
+                <span class="text-xs text-rose-400 font-medium">{{ form.password2.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="w-full py-3.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 mt-2">
+                Crear Cuenta
+            </button>
+        </form>
+
+        <div class="mt-8 text-center border-t border-white/5 pt-6">
+            <p class="text-sm text-slate-400">
+                ¿Ya tienes una cuenta? 
+                <a href="{% url 'login' %}" class="text-purple-400 hover:text-purple-300 font-semibold transition-all duration-150">Inicia sesión</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

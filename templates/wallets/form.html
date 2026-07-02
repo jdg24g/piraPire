@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar Cuenta{% else %}Nueva Cuenta{% endif %} - PiraPire{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6">
+    <div class="mb-6">
+        <a href="{% url 'wallet_list' %}" class="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-semibold mb-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Volver al listado
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight text-white">
+            {% if object %}Editar Cuenta{% else %}Crear Cuenta{% endif %}
+        </h1>
+        <p class="text-slate-400 mt-1">Completa los datos de la cuenta o billetera</p>
+    </div>
+
+    <div class="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
+                <p class="font-bold mb-1">Por favor corrige los siguientes errores:</p>
+                <ul class="list-disc list-inside">
+                    {% for field, errors in form.errors.items %}
+                    <li><strong>{{ field|capfirst }}:</strong> {{ errors|join:", " }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Nombre de la cuenta -->
+            <div class="space-y-2">
+                <label for="{{ form.name.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.name.label }}</label>
+                {{ form.name }}
+            </div>
+
+            <!-- Grid de Tipo y Moneda -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Tipo de Cuenta -->
+                <div class="space-y-2">
+                    <label for="{{ form.type.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.type.label }}</label>
+                    {{ form.type }}
+                </div>
+
+                <!-- Moneda -->
+                <div class="space-y-2">
+                    <label for="{{ form.currency.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.currency.label }}</label>
+                    {{ form.currency }}
+                </div>
+            </div>
+
+            <!-- Saldo Inicial -->
+            <div class="space-y-2">
+                <label for="{{ form.initial_balance.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.initial_balance.label }}</label>
+                {{ form.initial_balance }}
+            </div>
+
+            <!-- Activa / Inactiva -->
+            <div class="flex items-center gap-3">
+                {{ form.is_active }}
+                <label for="{{ form.is_active.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.is_active.label }}</label>
+            </div>
+
+            <div class="flex justify-end gap-3 border-t border-white/5 pt-6">
+                <a href="{% url 'wallet_list' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

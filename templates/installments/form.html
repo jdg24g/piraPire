@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar Compra en Cuotas{% else %}Nueva Compra en Cuotas{% endif %} - PiraPire{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-6">
+    <div class="mb-6">
+        <a href="{% url 'installment_list' %}" class="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-semibold mb-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Volver al listado
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight text-white">
+            {% if object %}Editar Compra en Cuotas{% else %}Registrar Compra en Cuotas{% endif %}
+        </h1>
+        <p class="text-slate-400 mt-1">Completa los datos de la compra financiada</p>
+    </div>
+
+    <div class="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
+                <p class="font-bold mb-1">Por favor corrige los siguientes errores:</p>
+                <ul class="list-disc list-inside">
+                    {% for field, errors in form.errors.items %}
+                    <li><strong>{{ field|capfirst }}:</strong> {{ errors|join:", " }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Nombre del Producto/Servicio -->
+            <div class="space-y-2">
+                <label for="{{ form.product_name.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.product_name.label }}</label>
+                {{ form.product_name }}
+            </div>
+
+            <!-- Grid de Cuenta y Categoría -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Cuenta para el Pago -->
+                <div class="space-y-2">
+                    <label for="{{ form.wallet.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.wallet.label }}</label>
+                    {{ form.wallet }}
+                </div>
+
+                <!-- Categoría -->
+                <div class="space-y-2">
+                    <label for="{{ form.category.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.category.label }}</label>
+                    {{ form.category }}
+                </div>
+            </div>
+
+            <!-- Grid de Monto Total y Cantidad de Cuotas -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Monto Total -->
+                <div class="space-y-2">
+                    <label for="{{ form.total_amount.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.total_amount.label }}</label>
+                    {{ form.total_amount }}
+                </div>
+
+                <!-- Cantidad de Cuotas -->
+                <div class="space-y-2">
+                    <label for="{{ form.total_installments.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.total_installments.label }}</label>
+                    {{ form.total_installments }}
+                </div>
+            </div>
+
+            <!-- Grid de Valor de Cuota y Cuotas Pagadas -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Valor de Cuota (Opcional) -->
+                <div class="space-y-2">
+                    <label for="{{ form.installment_value.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.installment_value.label }}</label>
+                    {{ form.installment_value }}
+                    <span class="text-xs text-slate-400 mt-1 block">Dejar vacío para calcular automáticamente: Monto Total / Cantidad de Cuotas.</span>
+                </div>
+
+                <!-- Cuotas Pagadas -->
+                <div class="space-y-2">
+                    <label for="{{ form.paid_installments.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.paid_installments.label }}</label>
+                    {{ form.paid_installments }}
+                </div>
+            </div>
+
+            <!-- Grid de Fecha de Inicio y Estado -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Fecha de Inicio -->
+                <div class="space-y-2">
+                    <label for="{{ form.start_date.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.start_date.label }}</label>
+                    {{ form.start_date }}
+                </div>
+
+                <!-- Estado -->
+                <div class="space-y-2">
+                    <label for="{{ form.status.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.status.label }}</label>
+                    {{ form.status }}
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 border-t border-white/5 pt-6">
+                <a href="{% url 'installment_list' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

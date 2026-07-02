@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}Cuentas - PiraPire{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight text-white">Mis Cuentas</h1>
+        <p class="text-slate-400 mt-1">Administra tus billeteras, cuentas bancarias y tarjetas</p>
+    </div>
+    
+    <a href="{% url 'wallet_create' %}" class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-semibold text-sm transition-all duration-200 text-center shadow-lg shadow-indigo-600/20">
+        + Nueva Cuenta
+    </a>
+</div>
+
+<!-- Listado de Cuentas (Cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for wallet in wallets %}
+    <div class="glass-card rounded-3xl border border-white/10 shadow-xl overflow-hidden flex flex-col justify-between h-56 relative group hover:border-white/20 transition-all duration-300">
+        <!-- Efecto de gradiente de fondo según el tipo de cuenta -->
+        <div class="absolute inset-0 bg-gradient-to-br 
+            {% if wallet.type == 'CASH' %}from-amber-600/10 to-orange-600/10
+            {% elif wallet.type == 'BANK' %}from-blue-600/10 to-indigo-600/10
+            {% elif wallet.type == 'CREDIT' %}from-rose-600/10 to-purple-600/10
+            {% elif wallet.type == 'DEBIT' %}from-emerald-600/10 to-teal-600/10
+            {% else %}from-slate-600/10 to-slate-800/10{% endif %} 
+            opacity-70 pointer-events-none transition-opacity duration-300 group-hover:opacity-100"></div>
+
+        <!-- Cabecera de la Cuenta -->
+        <div class="p-6 relative z-10 flex justify-between items-start">
+            <div>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/10 text-slate-300">
+                    {{ wallet.get_type_display }}
+                </span>
+                <h3 class="text-xl font-bold text-white mt-3 truncate max-w-[180px]">{{ wallet.name }}</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Saldo inicial: {{ wallet.initial_balance|gs_format }}</p>
+            </div>
+            
+            <div class="flex flex-col items-end gap-2">
+                <span class="inline-flex h-2.5 w-2.5 rounded-full {% if wallet.is_active %}bg-emerald-400{% else %}bg-slate-500{% endif %}" title="{% if wallet.is_active %}Activa{% else %}Inactiva{% endif %}"></span>
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{{ wallet.currency }}</span>
+            </div>
+        </div>
+
+        <!-- Footer / Saldo Actual -->
+        <div class="p-6 relative z-10 border-t border-white/5 bg-[#0b0f19]/40 flex justify-between items-center">
+            <div>
+                <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Actual</p>
+                <h4 class="text-2xl font-black text-white mt-0.5">
+                    {{ wallet.current_balance|gs_format }}
+                </h4>
+            </div>
+            
+            <a href="{% url 'wallet_edit' wallet.id %}" class="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-white text-xs font-semibold transition-all duration-200">
+                Editar
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full py-12 text-center glass-card rounded-3xl border border-white/10">
+        <svg class="w-12 h-12 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        <p class="text-slate-400 font-medium">Aún no has registrado ninguna cuenta.</p>
+        <a href="{% url 'wallet_create' %}" class="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-semibold text-sm transition-colors">
+            Crear mi primera cuenta
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

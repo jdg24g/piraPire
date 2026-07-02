@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PiraPire{% endblock %} - Control de Gastos</title>
+    
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    
+    <style>
+        body {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: #0b0f19;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        main[data-page-container] {
+            view-transition-name: page-content;
+            contain: layout paint;
+            min-height: calc(100vh - 2rem);
+            overflow-x: clip;
+        }
+        main[data-page-container].page-enter {
+            animation: pira-page-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        html.is-fetching body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 80;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #a855f7, #6366f1, transparent);
+            animation: pira-loading-bar 900ms ease-in-out infinite;
+        }
+        html.is-transitioning [data-page-container] {
+            pointer-events: none;
+        }
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation: none;
+        }
+        ::view-transition-old(page-content) {
+            animation: pira-page-out 120ms ease-out both;
+        }
+        ::view-transition-new(page-content) {
+            animation: pira-page-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .content-reveal {
+            animation: pira-card-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            animation-delay: var(--reveal-delay, 0ms);
+            transform-origin: center top;
+        }
+        @keyframes pira-loading-bar {
+            from {
+                transform: translateX(-60%);
+            }
+            to {
+                transform: translateX(60%);
+            }
+        }
+        @keyframes pira-page-out {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+        }
+        @keyframes pira-page-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes pira-card-enter {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @media (max-width: 767px) {
+            .glass-card,
+            aside,
+            header,
+            nav[data-mobile-nav],
+            input,
+            select,
+            textarea {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+            ::view-transition-old(page-content) {
+                animation: pira-mobile-page-out 110ms ease-out both;
+            }
+            ::view-transition-new(page-content) {
+                animation: pira-mobile-page-up 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+            .content-reveal {
+                animation-name: pira-mobile-card-up;
+                animation-duration: 280ms;
+            }
+        }
+        @keyframes pira-mobile-page-out {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+        }
+        @keyframes pira-mobile-page-up {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes pira-mobile-card-up {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            ::view-transition-old(page-content),
+            ::view-transition-new(page-content),
+            .content-reveal {
+                animation-duration: 1ms;
+                animation-delay: 0ms;
+            }
+            main[data-page-container].page-enter {
+                animation-duration: 1ms;
+            }
+            html.is-fetching body::after {
+                animation: none;
+            }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col md:flex-row bg-gradient-to-tr from-[#080b11] via-[#0f172a] to-[#1e1b4b] bg-no-repeat bg-cover bg-fixed" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
+    
+    {% if user.is_authenticated %}
+    <!-- SIDEBAR (Escritorio) -->
+    <aside class="hidden md:flex flex-col w-72 min-h-screen bg-[#0b0f19]/60 backdrop-blur-xl border-r border-white/10 p-6 flex-shrink-0">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="p-2 bg-gradient-to-tr from-purple-500 to-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <span class="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">PiraPire</span>
+        </div>
+
+        <nav class="flex-1 space-y-2" data-desktop-nav>
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 {% if request.resolver_match.url_name == 'dashboard' %}bg-white/10 text-white font-medium border border-white/10{% else %}text-slate-400 hover:bg-white/5 hover:text-white{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"/></svg>
+                Dashboard
+            </a>
+            <a href="{% url 'transaction_list' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 {% if 'transaction' in request.resolver_match.url_name %}bg-white/10 text-white font-medium border border-white/10{% else %}text-slate-400 hover:bg-white/5 hover:text-white{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                Movimientos
+            </a>
+            <a href="{% url 'wallet_list' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 {% if 'wallet' in request.resolver_match.url_name %}bg-white/10 text-white font-medium border border-white/10{% else %}text-slate-400 hover:bg-white/5 hover:text-white{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                Cuentas
+            </a>
+            <a href="{% url 'category_list' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 {% if 'category' in request.resolver_match.url_name %}bg-white/10 text-white font-medium border border-white/10{% else %}text-slate-400 hover:bg-white/5 hover:text-white{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Categorías
+            </a>
+            <a href="{% url 'installment_list' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 {% if 'installment' in request.resolver_match.url_name %}bg-white/10 text-white font-medium border border-white/10{% else %}text-slate-400 hover:bg-white/5 hover:text-white{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Cuotas
+            </a>
+            <a href="{% url 'report_list' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 {% if 'report' in request.resolver_match.url_name %}bg-white/10 text-white font-medium border border-white/10{% else %}text-slate-400 hover:bg-white/5 hover:text-white{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"/></svg>
+                Reportes
+            </a>
+        </nav>
+
+        <div class="mt-auto border-t border-white/10 pt-4">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <div class="truncate">
+                    <p class="text-sm font-semibold text-white truncate">{{ user.username }}</p>
+                    <p class="text-xs text-slate-400 truncate">{{ user.email }}</p>
+                </div>
+            </div>
+            <a href="{% url 'logout' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Cerrar Sesión
+            </a>
+        </div>
+    </aside>
+
+    <!-- HEADER MÓVIL (Móvil) -->
+    <header class="flex justify-between items-center px-6 py-4 md:hidden border-b border-white/10 bg-[#080b11]/80 backdrop-blur-xl sticky top-0 z-40">
+        <div class="flex items-center gap-2">
+            <div class="p-1.5 bg-gradient-to-tr from-purple-500 to-indigo-500 rounded-lg shadow-md">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">PiraPire</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-xs bg-white/10 px-2.5 py-1 rounded-full text-slate-300 font-medium">{{ user.username }}</span>
+            <a href="{% url 'logout' %}" class="text-red-400 hover:text-red-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- NAVEGACIÓN INFERIOR (Móvil) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#080b11]/80 backdrop-blur-xl border-t border-white/10 flex justify-around py-3" data-mobile-nav>
+        <a href="{% url 'dashboard' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"/></svg>
+            <span class="text-[10px] mt-1">Dashboard</span>
+        </a>
+        <a href="{% url 'transaction_list' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if 'transaction' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+            <span class="text-[10px] mt-1">Movimientos</span>
+        </a>
+        <a href="{% url 'wallet_list' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if 'wallet' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="text-[10px] mt-1">Cuentas</span>
+        </a>
+        <a href="{% url 'installment_list' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if 'installment' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="text-[10px] mt-1">Cuotas</span>
+        </a>
+        <a href="{% url 'report_list' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if 'report' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"/></svg>
+            <span class="text-[10px] mt-1">Reportes</span>
+        </a>
+    </nav>
+    {% endif %}
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto {% if user.is_authenticated %}mb-20 md:mb-0{% endif %} max-w-7xl mx-auto w-full" data-page-container>
+        <!-- MENSAJES DJANGO -->
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="flex items-center justify-between p-4 rounded-xl border {% if message.tags == 'success' %}bg-emerald-500/10 border-emerald-500/20 text-emerald-400{% elif message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-400{% else %}bg-blue-500/10 border-blue-500/20 text-blue-400{% endif %} glass-card shadow-lg animate-pulse" id="msg-{{ forloop.counter }}">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="text-sm font-medium">{{ message }}</span>
+                </div>
+                <button onclick="document.getElementById('msg-{{ forloop.counter }}').remove()" class="text-slate-400 hover:text-slate-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <script>
+        (() => {
+            if (window.piraPireTransitionsReady) return;
+            window.piraPireTransitionsReady = true;
+
+            const supportsTransitions = 'startViewTransition' in document;
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+            const desktopViewport = window.matchMedia('(min-width: 768px)');
+            let isNavigating = false;
+
+            function shouldEnhanceNavigation() {
+                return !reducedMotion.matches;
+            }
+
+            function shouldUseViewTransition() {
+                return supportsTransitions && desktopViewport.matches && !reducedMotion.matches;
+            }
+
+            function isSkippableUrl(url) {
+                return url.origin !== window.location.origin ||
+                    url.pathname.startsWith('/api/') ||
+                    url.pathname === '/logout/';
+            }
+
+            function isSamePageHash(url) {
+                return url.pathname === window.location.pathname &&
+                    url.search === window.location.search &&
+                    url.hash;
+            }
+
+            function isCurrentUrl(url) {
+                return url.pathname === window.location.pathname &&
+                    url.search === window.location.search &&
+                    !url.hash;
+            }
+
+            function shouldHandleLink(event, link) {
+                if (isNavigating || !shouldEnhanceNavigation() || event.defaultPrevented || event.button !== 0) return false;
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+                if (link.target && link.target !== '_self') return false;
+                if (link.hasAttribute('download') || link.dataset.noTransition !== undefined) return false;
+
+                const url = new URL(link.href, window.location.href);
+                return !isSkippableUrl(url) && !isSamePageHash(url) && !isCurrentUrl(url);
+            }
+
+            function shouldHandleForm(form) {
+                if (isNavigating || !shouldEnhanceNavigation() || form.dataset.noTransition !== undefined) return false;
+                const method = (form.method || 'get').toLowerCase();
+                const url = new URL(form.action || window.location.href, window.location.href);
+                return method === 'get' && !isSkippableUrl(url);
+            }
+
+            function runInlineScripts(scope) {
+                scope.querySelectorAll('script').forEach(script => {
+                    const type = (script.getAttribute('type') || '').trim();
+                    if (script.src || (type && !['module', 'text/javascript', 'application/javascript'].includes(type))) {
+                        return;
+                    }
+
+                    const freshScript = document.createElement('script');
+                    freshScript.type = 'module';
+                    freshScript.textContent = script.textContent;
+                    script.replaceWith(freshScript);
+                });
+            }
+
+            function dismissMessages(scope = document) {
+                setTimeout(() => {
+                    scope.querySelectorAll('[id^="msg-"]').forEach(msg => {
+                        msg.style.transition = 'opacity 0.5s ease';
+                        msg.style.opacity = '0';
+                        setTimeout(() => msg.remove(), 500);
+                    });
+                }, 4000);
+            }
+
+            function revealContent(scope = document) {
+                if (reducedMotion.matches) return;
+
+                const elements = Array.from(scope.querySelectorAll('.glass-card'));
+                elements.forEach((element, index) => {
+                    element.classList.remove('content-reveal');
+                    element.style.setProperty('--reveal-delay', `${Math.min(index * 28, 140)}ms`);
+                });
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        elements.forEach(element => {
+                            element.classList.add('content-reveal');
+                        });
+                    });
+                });
+            }
+
+            function syncShellFragment(nextDocument, selector) {
+                const current = document.querySelector(selector);
+                const next = nextDocument.querySelector(selector);
+                if (!current || !next) return;
+
+                current.innerHTML = next.innerHTML;
+                current.className = next.className;
+            }
+
+            function swapDocument(nextDocument) {
+                document.title = nextDocument.title;
+
+                if (document.body.dataset.authenticated !== nextDocument.body.dataset.authenticated) {
+                    document.body.innerHTML = nextDocument.body.innerHTML;
+                    document.body.dataset.authenticated = nextDocument.body.dataset.authenticated;
+                    runInlineScripts(document.body);
+                    dismissMessages(document.body);
+                    window.scrollTo(0, 0);
+                    return;
+                }
+
+                const currentMain = document.querySelector('[data-page-container]');
+                const nextMain = nextDocument.querySelector('[data-page-container]');
+                if (!currentMain || !nextMain) {
+                    throw new Error('No se encontró el contenedor principal.');
+                }
+
+                currentMain.replaceWith(nextMain);
+                syncShellFragment(nextDocument, '[data-desktop-nav]');
+                syncShellFragment(nextDocument, '[data-mobile-nav]');
+                runInlineScripts(nextMain);
+                dismissMessages(nextMain);
+                nextMain.classList.add('page-enter');
+                nextMain.addEventListener('animationend', () => {
+                    nextMain.classList.remove('page-enter');
+                }, { once: true });
+                window.scrollTo(0, 0);
+            }
+
+            async function fetchDocument(url) {
+                const response = await fetch(url, {
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'ViewTransition' },
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok || !contentType.includes('text/html')) {
+                    throw new Error('La respuesta no es HTML navegable.');
+                }
+
+                const html = await response.text();
+                return {
+                    url: response.url,
+                    document: new DOMParser().parseFromString(html, 'text/html'),
+                };
+            }
+
+            window.loadPiraChart = function loadPiraChart() {
+                if (window.Chart) return Promise.resolve(window.Chart);
+                if (window.piraChartLoading) return window.piraChartLoading;
+
+                window.piraChartLoading = new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    script.defer = true;
+                    script.onload = () => resolve(window.Chart);
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+
+                return window.piraChartLoading;
+            };
+
+            async function navigate(url, shouldPushState = true) {
+                isNavigating = true;
+                document.documentElement.classList.add('is-fetching');
+
+                try {
+                    const next = await fetchDocument(url);
+                    document.documentElement.classList.remove('is-fetching');
+                    document.documentElement.classList.add('is-transitioning');
+
+                    if (shouldUseViewTransition()) {
+                        const transition = document.startViewTransition(() => {
+                            swapDocument(next.document);
+                        });
+
+                        if (shouldPushState) {
+                            history.pushState({}, '', next.url);
+                        }
+
+                        await transition.finished;
+                    } else {
+                        swapDocument(next.document);
+                        if (shouldPushState) {
+                            history.pushState({}, '', next.url);
+                        }
+                    }
+                } catch (error) {
+                    if (shouldPushState) {
+                        window.location.href = url;
+                    } else {
+                        window.location.reload();
+                    }
+                } finally {
+                    isNavigating = false;
+                    document.documentElement.classList.remove('is-fetching', 'is-transitioning');
+                }
+            }
+
+            function activateMobileNavItem(link) {
+                if (!link.matches('[data-mobile-nav-item]')) return;
+
+                const nav = link.closest('[data-mobile-nav]');
+                if (!nav) return;
+
+                nav.querySelectorAll('[data-mobile-nav-item]').forEach(item => {
+                    item.classList.remove('bg-white/10', 'text-purple-400');
+                    item.classList.add('text-slate-400');
+                });
+
+                link.classList.remove('text-slate-400');
+                link.classList.add('bg-white/10', 'text-purple-400');
+            }
+
+            document.addEventListener('click', event => {
+                const target = event.target instanceof Element ? event.target : null;
+                const link = target ? target.closest('a[href]') : null;
+                if (!link || !shouldHandleLink(event, link)) return;
+
+                event.preventDefault();
+                activateMobileNavItem(link);
+                navigate(link.href);
+            });
+
+            document.addEventListener('submit', event => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement) || !shouldHandleForm(form)) return;
+
+                event.preventDefault();
+                const url = new URL(form.action || window.location.href, window.location.href);
+                url.search = new URLSearchParams(new FormData(form)).toString();
+                navigate(url.href);
+            });
+
+            window.addEventListener('popstate', () => {
+                navigate(window.location.href, false);
+            });
+
+            dismissMessages();
+            revealContent();
+        })();
+    </script>
+</body>
+</html>
