@@ -4,6 +4,7 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from datetime import date
 import json
+from django.core.serializers.json import DjangoJSONEncoder
 from .services import get_dashboard_data, get_reports_data
 from wallets.models import Wallet
 from categories.models import Category
@@ -50,8 +51,8 @@ class WebDashboardView(LoginRequiredMixin, View):
             'data': dashboard_data,
             'year': year,
             'month': month,
-            'category_expenses_json': json.dumps(category_expenses),
-            'summary_json': json.dumps(summary_data),
+            'category_expenses_json': json.dumps(category_expenses, cls=DjangoJSONEncoder),
+            'summary_json': json.dumps(summary_data, cls=DjangoJSONEncoder),
         }
         return render(request, 'dashboard/index.html', context)
 
@@ -94,8 +95,8 @@ class WebReportView(LoginRequiredMixin, View):
             'wallets': wallets,
             'categories': categories,
             'filters': filters,
-            'by_category_json': json.dumps(by_category),
-            'by_wallet_json': json.dumps(by_wallet),
-            'summary_json': json.dumps(summary),
+            'by_category_json': json.dumps(by_category, cls=DjangoJSONEncoder),
+            'by_wallet_json': json.dumps(by_wallet, cls=DjangoJSONEncoder),
+            'summary_json': json.dumps(summary, cls=DjangoJSONEncoder),
         }
         return render(request, 'reports/index.html', context)
