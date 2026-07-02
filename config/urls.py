@@ -10,7 +10,7 @@ from reports.web_views import WebDashboardView, WebReportView
 from transactions.web_views import TransactionListView, TransactionCreateView, TransactionUpdateView, TransactionDeleteView
 from wallets.web_views import WalletListView, WalletCreateView, WalletUpdateView
 from categories.web_views import CategoryListView, CategoryCreateView, CategoryUpdateView
-from installments.web_views import InstallmentPurchaseListView, InstallmentPurchaseCreateView, InstallmentPurchaseUpdateView, InstallmentPurchasePayView, FixedExpensePayView, FixedExpenseDeactivateView
+from installments.web_views import InstallmentPurchaseListView, InstallmentPurchaseCreateView, InstallmentPurchaseUpdateView, InstallmentPurchasePayView, FixedExpensePayView, FixedExpenseDeactivateView, FixedExpenseUpdateView, FixedExpenseDeleteView
 
 # ponytail: vista para redirigir la raíz del sitio
 def root_redirect_view(request):
@@ -47,6 +47,8 @@ urlpatterns = [
     path('installments/new/', InstallmentPurchaseCreateView.as_view(), name='installment_create'),
     path('installments/<int:pk>/edit/', InstallmentPurchaseUpdateView.as_view(), name='installment_edit'),
     path('installments/<int:pk>/pay/', InstallmentPurchasePayView.as_view(), name='installment_pay'),
+    path('fixed-expenses/<int:pk>/edit/', FixedExpenseUpdateView.as_view(), name='fixed_expense_edit'),
+    path('fixed-expenses/<int:pk>/delete/', FixedExpenseDeleteView.as_view(), name='fixed_expense_delete'),
     path('fixed-expenses/<int:pk>/pay/', FixedExpensePayView.as_view(), name='fixed_expense_pay'),
     path('fixed-expenses/<int:pk>/deactivate/', FixedExpenseDeactivateView.as_view(), name='fixed_expense_deactivate'),
     

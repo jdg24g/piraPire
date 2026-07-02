@@ -11,7 +11,7 @@ class RecurrentMovementSerializer(serializers.ModelSerializer):
         model = RecurrentMovement
         fields = [
             'id', 'user', 'wallet', 'wallet_name', 'category', 
-            'category_name', 'type', 'amount', 'start_date', 
+            'category_name', 'type', 'amount', 'amount_is_variable', 'start_date',
             'end_date', 'due_day', 'frequency', 'description', 'is_active',
             'created_at', 'updated_at'
         ]
@@ -22,7 +22,8 @@ class RecurrentMovementSerializer(serializers.ModelSerializer):
         return value
 
     def validate_amount(self, value):
-        if value <= 0:
+        amount_is_variable = self.initial_data.get('amount_is_variable') in [True, 'true', 'True', '1', 1]
+        if value <= 0 and not amount_is_variable:
             raise serializers.ValidationError("El monto debe ser mayor que cero.")
         return value
 

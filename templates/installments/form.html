@@ -33,7 +33,7 @@
 
             <div data-installment-form data-initial-mode="{{ initial_mode|default:'cuotas' }}" class="mb-6">
                 {% if not object %}
-                <div class="flex p-1 bg-white/5 rounded-2xl border border-white/10 w-full sm:w-max mx-auto mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 p-1 bg-white/5 rounded-2xl border border-white/10 w-full mx-auto mb-6">
                     <button type="button" 
                             data-mode-option="cuotas"
                             class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold transition-all duration-200">
@@ -44,6 +44,11 @@
                             class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold transition-all duration-200">
                         Gasto Fijo Mensual
                     </button>
+                    <button type="button"
+                            data-mode-option="fijo_variable"
+                            class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold transition-all duration-200">
+                        Gasto Variable Mensual
+                    </button>
                 </div>
                 {% endif %}
 
@@ -53,6 +58,7 @@
                 <label for="{{ form.product_name.id_for_label }}" class="text-sm font-semibold text-slate-300">
                     <span data-mode-label="cuotas">{{ form.product_name.label }}</span>
                     <span data-mode-label="fijo" class="hidden">Nombre del Gasto</span>
+                    <span data-mode-label="fijo_variable" class="hidden">Nombre del Gasto</span>
                 </label>
                 {{ form.product_name }}
             </div>
@@ -82,7 +88,7 @@
                 </div>
 
                 <!-- Valor de Cuota (En Gasto Fijo es el principal, en Cuotas es opcional) -->
-                <div class="space-y-2">
+                <div class="space-y-2" data-mode-panel="cuotas fijo">
                     <label for="{{ form.installment_value.id_for_label }}" class="text-sm font-semibold text-slate-300">
                         <span data-mode-label="cuotas">Valor de Cuota (Opcional)</span>
                         <span data-mode-label="fijo" class="hidden">Monto Mensual (Obligatorio)</span>
@@ -92,7 +98,13 @@
                     <span data-mode-help="fijo" class="hidden text-xs text-slate-400 mt-1">Monto mensual del gasto fijo.</span>
                 </div>
 
-                <div class="space-y-2" data-mode-panel="fijo">
+                <div class="space-y-2" data-mode-panel="fijo_variable">
+                    <div class="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-300">
+                        El monto se cargará cada mes al marcarlo como pagado.
+                    </div>
+                </div>
+
+                <div class="space-y-2" data-mode-panel="fijo fijo_variable">
                     <label for="id_due_day" class="text-sm font-semibold text-slate-300">Día de Vencimiento</label>
                     <input type="number" name="due_day" id="id_due_day" min="1" max="31" value="{{ request.POST.due_day|default:'10' }}" class="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-md">
                     <span class="text-xs text-slate-400 mt-1 block">Ejemplo: si vence el 10 de cada mes, escribe 10.</span>
@@ -128,11 +140,11 @@
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 border-t border-white/5 pt-6">
-                <a href="{% url 'installment_list' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
+            <div class="flex flex-col sm:flex-row justify-end gap-3 border-t border-white/5 pt-6">
+                <a href="{% url 'installment_list' %}" class="w-full sm:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
                     Cancelar
                 </a>
-                <button type="submit" data-submit-installment class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
+                <button type="submit" data-submit-installment class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
                     {% if object %}Guardar Cambios{% else %}Registrar{% endif %}
                 </button>
             </div>
@@ -152,7 +164,7 @@
         const statusInput = document.getElementById('{{ form.status.id_for_label }}');
         const dueDayInput = document.getElementById('id_due_day');
         const entryTypeInput = root.closest('form')?.querySelector('[data-entry-type]');
-        let currentMode = root.dataset.initialMode === 'fijo' ? 'fijo' : 'cuotas';
+        let currentMode = ['fijo', 'fijo_variable'].includes(root.dataset.initialMode) ? root.dataset.initialMode : 'cuotas';
 
         function todayValue() {
             return new Date().toISOString().slice(0, 10);
@@ -170,13 +182,18 @@
             });
             root.querySelectorAll('[data-mode-panel], [data-mode-label], [data-mode-help]').forEach(element => {
                 const targetMode = element.dataset.modePanel || element.dataset.modeLabel || element.dataset.modeHelp;
-                element.classList.toggle('hidden', targetMode !== mode);
+                const visible = targetMode.split(' ').includes(mode);
+                element.classList.toggle('hidden', !visible);
                 if (element.dataset.modeHelp) {
-                    element.classList.toggle('block', targetMode === mode);
+                    element.classList.toggle('block', visible);
                 }
             });
             if (totalAmountInput) {
                 totalAmountInput.required = mode === 'cuotas';
+            }
+            const installmentValueInput = document.getElementById('{{ form.installment_value.id_for_label }}');
+            if (installmentValueInput) {
+                installmentValueInput.required = mode === 'fijo';
             }
             if (totalInstallmentsInput) {
                 totalInstallmentsInput.required = mode === 'cuotas';
@@ -191,7 +208,7 @@
                 statusInput.required = mode === 'cuotas';
             }
             if (dueDayInput) {
-                dueDayInput.required = mode === 'fijo';
+                dueDayInput.required = ['fijo', 'fijo_variable'].includes(mode);
             }
             if (entryTypeInput) {
                 entryTypeInput.value = mode;
@@ -203,10 +220,14 @@
         });
 
         root.closest('form')?.addEventListener('submit', () => {
-            if (currentMode === 'fijo' && totalAmountInput) {
+            if (['fijo', 'fijo_variable'].includes(currentMode) && totalAmountInput) {
                 totalAmountInput.value = '';
             }
-            if (currentMode === 'fijo') {
+            if (currentMode === 'fijo_variable') {
+                const installmentValueInput = document.getElementById('{{ form.installment_value.id_for_label }}');
+                if (installmentValueInput) installmentValueInput.value = '';
+            }
+            if (['fijo', 'fijo_variable'].includes(currentMode)) {
                 if (totalInstallmentsInput) totalInstallmentsInput.value = '1';
                 if (paidInstallmentsInput) paidInstallmentsInput.value = '0';
                 if (startDateInput && !startDateInput.value) startDateInput.value = todayValue();

@@ -37,6 +37,7 @@ class RecurrentMovement(models.Model):
     )
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
+    amount_is_variable = models.BooleanField(default=False)
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
     due_day = models.PositiveSmallIntegerField(default=1)

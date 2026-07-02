@@ -1,5 +1,6 @@
 import calendar
 from datetime import date
+from decimal import Decimal, InvalidOperation
 
 # ponytail: vistas web CRUD para compras en cuotas (InstallmentPurchase)
 from django.views.generic import ListView, CreateView, UpdateView, View
@@ -12,7 +13,7 @@ from django.utils import timezone
 from recurrences.models import RecurrentMovement, RecurrentPayment
 from transactions.models import Transaction
 from .models import InstallmentPurchase
-from .forms import InstallmentPurchaseForm
+from .forms import InstallmentPurchaseForm, FixedExpenseForm
 
 
 MONTH_NAMES = [
@@ -123,7 +124,8 @@ class InstallmentPurchaseCreateView(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        if self.request.POST.get('entry_type') == 'fijo':
+        entry_type = self.request.POST.get('entry_type')
+        if entry_type in ['fijo', 'fijo_variable']:
             today = timezone.localdate()
             due_day = int(self.request.POST.get('due_day'))
             RecurrentMovement.objects.create(
@@ -131,14 +133,18 @@ class InstallmentPurchaseCreateView(LoginRequiredMixin, CreateView):
                 wallet=form.cleaned_data['wallet'],
                 category=form.cleaned_data['category'],
                 type='EXPENSE',
-                amount=form.cleaned_data['installment_value'],
+                amount=form.cleaned_data['installment_value'] if entry_type == 'fijo' else 0,
+                amount_is_variable=entry_type == 'fijo_variable',
                 start_date=clamp_date(today.year, today.month, due_day),
                 due_day=due_day,
                 frequency='MONTHLY',
                 description=form.cleaned_data['product_name'],
                 is_active=True,
             )
-            messages.success(self.request, "Gasto fijo mensual registrado exitosamente.")
+            if entry_type == 'fijo_variable':
+                messages.success(self.request, "Gasto fijo mensual variable registrado exitosamente.")
+            else:
+                messages.success(self.request, "Gasto fijo mensual registrado exitosamente.")
             return redirect('installment_list')
 
         form.instance.user = self.request.user
@@ -234,14 +240,26 @@ class FixedExpensePayView(LoginRequiredMixin, View):
             messages.error(request, f"{label} ya estaba marcado como pagado.")
             return redirect('installment_list')
 
+        amount = recurrence.amount
+        subtype = 'FIXED'
+        if recurrence.amount_is_variable:
+            try:
+                amount = Decimal(request.POST.get('amount', ''))
+            except (InvalidOperation, TypeError):
+                amount = Decimal('0')
+            if amount <= 0:
+                messages.error(request, "Debes ingresar el monto pagado este mes.")
+                return redirect('installment_list')
+            subtype = 'VARIABLE_FIXED'
+
         with transaction.atomic():
             tx = Transaction.objects.create(
                 user=request.user,
                 wallet=recurrence.wallet,
                 category=recurrence.category,
                 type='EXPENSE',
-                subtype='FIXED',
-                amount=recurrence.amount,
+                subtype=subtype,
+                amount=amount,
                 date=timezone.localdate(),
                 description=f"{recurrence.description} - pago {label}",
             )
@@ -269,4 +287,41 @@ class FixedExpenseDeactivateView(LoginRequiredMixin, View):
         recurrence.end_date = timezone.localdate()
         recurrence.save(update_fields=['is_active', 'end_date', 'updated_at'])
         messages.success(request, "Gasto fijo mensual desactivado.")
+        return redirect('installment_list')
+
+
+class FixedExpenseUpdateView(LoginRequiredMixin, UpdateView):
+    model = RecurrentMovement
+    form_class = FixedExpenseForm
+    template_name = 'installments/fixed_form.html'
+    success_url = reverse_lazy('installment_list')
+
+    def get_queryset(self):
+        return RecurrentMovement.objects.filter(
+            user=self.request.user,
+            type='EXPENSE',
+            frequency='MONTHLY',
+        )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, "Gasto fijo mensual actualizado exitosamente.")
+        return super().form_valid(form)
+
+
+class FixedExpenseDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        recurrence = get_object_or_404(
+            RecurrentMovement,
+            pk=pk,
+            user=request.user,
+            type='EXPENSE',
+            frequency='MONTHLY',
+        )
+        recurrence.delete()
+        messages.success(request, "Gasto fijo mensual eliminado.")
         return redirect('installment_list')

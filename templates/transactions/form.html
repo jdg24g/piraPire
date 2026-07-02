@@ -84,11 +84,11 @@
                 {{ form.description }}
             </div>
 
-            <div class="flex justify-end gap-3 border-t border-white/5 pt-6">
-                <a href="{% url 'transaction_list' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
+            <div class="flex flex-col sm:flex-row justify-end gap-3 border-t border-white/5 pt-6">
+                <a href="{% url 'transaction_list' %}" class="w-full sm:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
                     Cancelar
                 </a>
-                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
                     Guardar Cambios
                 </button>
             </div>
