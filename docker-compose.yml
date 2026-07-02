@@ -7,8 +7,6 @@ services:
       - "25610:8000"
     env_file:
       - .env
-    volumes:
-      - .:/app
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # El entrypoint se encarga de todo el flujo (Tailwind, migraciones, collectstatic, gunicorn)
