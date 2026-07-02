@@ -14,8 +14,8 @@ class InstallmentPurchaseForm(forms.ModelForm):
             'wallet': 'Cuenta para el Pago',
             'category': 'Categoría',
             'total_amount': 'Monto Total',
-            'total_installments': 'Cantidad de Cuotas',
-            'installment_value': 'Valor de Cuota (Opcional - Se calcula automático)',
+            'total_installments': 'Cantidad de Cuotas (o Meses)',
+            'installment_value': 'Valor de Cuota (o Mensualidad)',
             'paid_installments': 'Cuotas Pagadas',
             'start_date': 'Fecha de Inicio',
             'status': 'Estado',
@@ -42,3 +42,20 @@ class InstallmentPurchaseForm(forms.ModelForm):
             self.fields['category'].queryset = Category.objects.filter(
                 Q(user=user) | Q(is_default=True)
             ).filter(is_active=True)
+
+        # Hacemos que el Monto Total sea opcional desde el formulario para permitir cálculos inversos
+        self.fields['total_amount'].required = False
+        self.fields['installment_value'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        total_amount = cleaned_data.get('total_amount')
+        total_installments = cleaned_data.get('total_installments')
+        installment_value = cleaned_data.get('installment_value')
+
+        if not total_amount:
+            if not installment_value or not total_installments:
+                raise forms.ValidationError("Debes proporcionar el Monto Total o el Valor Mensual junto con la Cantidad de Cuotas.")
+            cleaned_data['total_amount'] = installment_value * total_installments
+
+        return cleaned_data

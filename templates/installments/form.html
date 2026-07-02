@@ -30,6 +30,24 @@
             </div>
             {% endif %}
 
+            <!-- Selector de Tipo de Registro -->
+            <div x-data="{ tipoRegistro: 'cuotas' }" class="mb-6">
+                <div class="flex p-1 bg-white/5 rounded-2xl border border-white/10 w-full sm:w-max mx-auto mb-6">
+                    <button type="button" 
+                            @click="tipoRegistro = 'cuotas'" 
+                            :class="{'bg-purple-600 shadow-lg': tipoRegistro === 'cuotas', 'hover:bg-white/5 text-slate-400': tipoRegistro !== 'cuotas'}"
+                            class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-200">
+                        Compra en Cuotas
+                    </button>
+                    <button type="button" 
+                            @click="tipoRegistro = 'fijo'" 
+                            :class="{'bg-purple-600 shadow-lg': tipoRegistro === 'fijo', 'hover:bg-white/5 text-slate-400': tipoRegistro !== 'fijo'}"
+                            class="flex-1 sm:px-6 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-200">
+                        Gasto Fijo Mensual
+                    </button>
+                </div>
+
+
             <!-- Nombre del Producto/Servicio -->
             <div class="space-y-2">
                 <label for="{{ form.product_name.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.product_name.label }}</label>
@@ -53,28 +71,33 @@
 
             <!-- Grid de Monto Total y Cantidad de Cuotas -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Monto Total -->
-                <div class="space-y-2">
+                <!-- Monto Total (Solo en Cuotas) -->
+                <div class="space-y-2" x-show="tipoRegistro === 'cuotas'">
                     <label for="{{ form.total_amount.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.total_amount.label }}</label>
                     {{ form.total_amount }}
+                    <span class="text-xs text-slate-400 mt-1 block">Monto total de la compra.</span>
+                </div>
+
+                <!-- Valor de Cuota (En Gasto Fijo es el principal, en Cuotas es opcional) -->
+                <div class="space-y-2">
+                    <label for="{{ form.installment_value.id_for_label }}" class="text-sm font-semibold text-slate-300">
+                        <span x-show="tipoRegistro === 'cuotas'">Valor de Cuota (Opcional)</span>
+                        <span x-show="tipoRegistro === 'fijo'">Monto Mensual (Obligatorio)</span>
+                    </label>
+                    {{ form.installment_value }}
+                    <span x-show="tipoRegistro === 'cuotas'" class="text-xs text-slate-400 mt-1 block">Si lo dejas vacío se calculará: Total / Cuotas.</span>
+                    <span x-show="tipoRegistro === 'fijo'" class="text-xs text-slate-400 mt-1 block">El Monto Total se calculará: Mensualidad * Meses.</span>
                 </div>
 
                 <!-- Cantidad de Cuotas -->
                 <div class="space-y-2">
-                    <label for="{{ form.total_installments.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.total_installments.label }}</label>
+                    <label for="{{ form.total_installments.id_for_label }}" class="text-sm font-semibold text-slate-300">
+                        <span x-show="tipoRegistro === 'cuotas'">Cantidad de Cuotas</span>
+                        <span x-show="tipoRegistro === 'fijo'">Duración (Meses)</span>
+                    </label>
                     {{ form.total_installments }}
                 </div>
-            </div>
-
-            <!-- Grid de Valor de Cuota y Cuotas Pagadas -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Valor de Cuota (Opcional) -->
-                <div class="space-y-2">
-                    <label for="{{ form.installment_value.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.installment_value.label }}</label>
-                    {{ form.installment_value }}
-                    <span class="text-xs text-slate-400 mt-1 block">Dejar vacío para calcular automáticamente: Monto Total / Cantidad de Cuotas.</span>
-                </div>
-
+                
                 <!-- Cuotas Pagadas -->
                 <div class="space-y-2">
                     <label for="{{ form.paid_installments.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.paid_installments.label }}</label>
@@ -101,10 +124,11 @@
                 <a href="{% url 'installment_list' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-300 font-semibold text-sm transition-colors text-center">
                     Cancelar
                 </a>
-                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
+                <button type="submit" @click="if(tipoRegistro === 'fijo') document.getElementById('{{ form.total_amount.id_for_label }}').value = ''" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
                     Guardar Cambios
                 </button>
             </div>
+            </div> <!-- Cierre del x-data -->
         </form>
     </div>
 </div>
