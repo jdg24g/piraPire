@@ -7,10 +7,10 @@ from django.shortcuts import redirect
 # Importaciones de vistas web
 from accounts.web_views import WebLoginView, WebRegisterView, web_logout_view
 from reports.web_views import WebDashboardView, WebReportView
-from transactions.web_views import TransactionListView, TransactionCreateView, TransactionUpdateView
+from transactions.web_views import TransactionListView, TransactionCreateView, TransactionUpdateView, TransactionDeleteView
 from wallets.web_views import WalletListView, WalletCreateView, WalletUpdateView
 from categories.web_views import CategoryListView, CategoryCreateView, CategoryUpdateView
-from installments.web_views import InstallmentPurchaseListView, InstallmentPurchaseCreateView, InstallmentPurchaseUpdateView, InstallmentPurchasePayView
+from installments.web_views import InstallmentPurchaseListView, InstallmentPurchaseCreateView, InstallmentPurchaseUpdateView, InstallmentPurchasePayView, FixedExpensePayView, FixedExpenseDeactivateView
 
 # ponytail: vista para redirigir la raíz del sitio
 def root_redirect_view(request):
@@ -33,6 +33,7 @@ urlpatterns = [
     path('movements/', TransactionListView.as_view(), name='transaction_list'),
     path('movements/new/', TransactionCreateView.as_view(), name='transaction_create'),
     path('movements/<int:pk>/edit/', TransactionUpdateView.as_view(), name='transaction_edit'),
+    path('movements/<int:pk>/delete/', TransactionDeleteView.as_view(), name='transaction_delete'),
     
     path('wallets/', WalletListView.as_view(), name='wallet_list'),
     path('wallets/new/', WalletCreateView.as_view(), name='wallet_create'),
@@ -46,6 +47,8 @@ urlpatterns = [
     path('installments/new/', InstallmentPurchaseCreateView.as_view(), name='installment_create'),
     path('installments/<int:pk>/edit/', InstallmentPurchaseUpdateView.as_view(), name='installment_edit'),
     path('installments/<int:pk>/pay/', InstallmentPurchasePayView.as_view(), name='installment_pay'),
+    path('fixed-expenses/<int:pk>/pay/', FixedExpensePayView.as_view(), name='fixed_expense_pay'),
+    path('fixed-expenses/<int:pk>/deactivate/', FixedExpenseDeactivateView.as_view(), name='fixed_expense_deactivate'),
     
     path('reports/', WebReportView.as_view(), name='report_list'),
 ]

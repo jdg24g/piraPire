@@ -12,9 +12,14 @@ class RecurrentMovementSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'wallet', 'wallet_name', 'category', 
             'category_name', 'type', 'amount', 'start_date', 
-            'end_date', 'frequency', 'description', 'is_active', 
+            'end_date', 'due_day', 'frequency', 'description', 'is_active',
             'created_at', 'updated_at'
         ]
+
+    def validate_due_day(self, value):
+        if value < 1 or value > 31:
+            raise serializers.ValidationError("El día de vencimiento debe estar entre 1 y 31.")
+        return value
 
     def validate_amount(self, value):
         if value <= 0:

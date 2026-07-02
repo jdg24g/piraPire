@@ -1,7 +1,9 @@
 # ponytail: vistas web CRUD para movimientos (Transactions) con filtrado y paso de usuario al form
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import ListView, CreateView, UpdateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib import messages
 from django.db.models import Q
 from .models import Transaction
@@ -86,3 +88,18 @@ class TransactionUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, "Movimiento actualizado exitosamente.")
         return super().form_valid(form)
+
+
+class TransactionDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        transaction = get_object_or_404(Transaction, pk=pk, user=request.user)
+
+        if hasattr(transaction, 'recurrence_payment'):
+            transaction.recurrence_payment.delete()
+
+        transaction.delete()
+        messages.success(request, "Movimiento eliminado exitosamente.")
+        next_url = request.POST.get('next')
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+            return redirect(next_url)
+        return redirect('transaction_list')

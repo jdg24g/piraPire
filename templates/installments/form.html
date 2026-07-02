@@ -32,6 +32,7 @@
             {% endif %}
 
             <div data-installment-form data-initial-mode="{{ initial_mode|default:'cuotas' }}" class="mb-6">
+                {% if not object %}
                 <div class="flex p-1 bg-white/5 rounded-2xl border border-white/10 w-full sm:w-max mx-auto mb-6">
                     <button type="button" 
                             data-mode-option="cuotas"
@@ -44,11 +45,15 @@
                         Gasto Fijo Mensual
                     </button>
                 </div>
+                {% endif %}
 
 
             <!-- Nombre del Producto/Servicio -->
             <div class="space-y-2">
-                <label for="{{ form.product_name.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.product_name.label }}</label>
+                <label for="{{ form.product_name.id_for_label }}" class="text-sm font-semibold text-slate-300">
+                    <span data-mode-label="cuotas">{{ form.product_name.label }}</span>
+                    <span data-mode-label="fijo" class="hidden">Nombre del Gasto</span>
+                </label>
                 {{ form.product_name }}
             </div>
 
@@ -84,20 +89,25 @@
                     </label>
                     {{ form.installment_value }}
                     <span data-mode-help="cuotas" class="text-xs text-slate-400 mt-1 block">Si lo dejas vacío se calculará: Total / Cuotas.</span>
-                    <span data-mode-help="fijo" class="hidden text-xs text-slate-400 mt-1">El Monto Total se calculará: Mensualidad * Meses.</span>
+                    <span data-mode-help="fijo" class="hidden text-xs text-slate-400 mt-1">Monto mensual del gasto fijo.</span>
+                </div>
+
+                <div class="space-y-2" data-mode-panel="fijo">
+                    <label for="id_due_day" class="text-sm font-semibold text-slate-300">Día de Vencimiento</label>
+                    <input type="number" name="due_day" id="id_due_day" min="1" max="31" value="{{ request.POST.due_day|default:'10' }}" class="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-md">
+                    <span class="text-xs text-slate-400 mt-1 block">Ejemplo: si vence el 10 de cada mes, escribe 10.</span>
                 </div>
 
                 <!-- Cantidad de Cuotas -->
-                <div class="space-y-2">
+                <div class="space-y-2" data-mode-panel="cuotas">
                     <label for="{{ form.total_installments.id_for_label }}" class="text-sm font-semibold text-slate-300">
-                        <span data-mode-label="cuotas">Cantidad de Cuotas</span>
-                        <span data-mode-label="fijo" class="hidden">Duración (Meses)</span>
+                        Cantidad de Cuotas
                     </label>
                     {{ form.total_installments }}
                 </div>
                 
                 <!-- Cuotas Pagadas -->
-                <div class="space-y-2">
+                <div class="space-y-2" data-mode-panel="cuotas">
                     <label for="{{ form.paid_installments.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.paid_installments.label }}</label>
                     {{ form.paid_installments }}
                 </div>
@@ -106,13 +116,13 @@
             <!-- Grid de Fecha de Inicio y Estado -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <!-- Fecha de Inicio -->
-                <div class="space-y-2">
+                <div class="space-y-2" data-mode-panel="cuotas">
                     <label for="{{ form.start_date.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.start_date.label }}</label>
                     {{ form.start_date }}
                 </div>
 
                 <!-- Estado -->
-                <div class="space-y-2">
+                <div class="space-y-2" data-mode-panel="cuotas">
                     <label for="{{ form.status.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.status.label }}</label>
                     {{ form.status }}
                 </div>
@@ -136,8 +146,17 @@
         if (!root) return;
 
         const totalAmountInput = document.getElementById('{{ form.total_amount.id_for_label }}');
+        const totalInstallmentsInput = document.getElementById('{{ form.total_installments.id_for_label }}');
+        const paidInstallmentsInput = document.getElementById('{{ form.paid_installments.id_for_label }}');
+        const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+        const statusInput = document.getElementById('{{ form.status.id_for_label }}');
+        const dueDayInput = document.getElementById('id_due_day');
         const entryTypeInput = root.closest('form')?.querySelector('[data-entry-type]');
         let currentMode = root.dataset.initialMode === 'fijo' ? 'fijo' : 'cuotas';
+
+        function todayValue() {
+            return new Date().toISOString().slice(0, 10);
+        }
 
         function setMode(mode) {
             currentMode = mode;
@@ -159,6 +178,21 @@
             if (totalAmountInput) {
                 totalAmountInput.required = mode === 'cuotas';
             }
+            if (totalInstallmentsInput) {
+                totalInstallmentsInput.required = mode === 'cuotas';
+            }
+            if (paidInstallmentsInput) {
+                paidInstallmentsInput.required = false;
+            }
+            if (startDateInput) {
+                startDateInput.required = mode === 'cuotas';
+            }
+            if (statusInput) {
+                statusInput.required = mode === 'cuotas';
+            }
+            if (dueDayInput) {
+                dueDayInput.required = mode === 'fijo';
+            }
             if (entryTypeInput) {
                 entryTypeInput.value = mode;
             }
@@ -171,6 +205,12 @@
         root.closest('form')?.addEventListener('submit', () => {
             if (currentMode === 'fijo' && totalAmountInput) {
                 totalAmountInput.value = '';
+            }
+            if (currentMode === 'fijo') {
+                if (totalInstallmentsInput) totalInstallmentsInput.value = '1';
+                if (paidInstallmentsInput) paidInstallmentsInput.value = '0';
+                if (startDateInput && !startDateInput.value) startDateInput.value = todayValue();
+                if (statusInput) statusInput.value = 'ACTIVE';
             }
         });
 

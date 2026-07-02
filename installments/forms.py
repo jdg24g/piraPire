@@ -1,6 +1,7 @@
 # ponytail: formulario simple para InstallmentPurchase con filtros para wallet y category
 from django import forms
 from django.db.models import Q
+from django.utils import timezone
 from .models import InstallmentPurchase
 from wallets.models import Wallet
 from categories.models import Category
@@ -46,13 +47,42 @@ class InstallmentPurchaseForm(forms.ModelForm):
         # Hacemos que el Monto Total sea opcional desde el formulario para permitir cálculos inversos
         self.fields['total_amount'].required = False
         self.fields['installment_value'].required = False
+        self.fields['total_installments'].required = False
+        self.fields['paid_installments'].required = False
+        self.fields['start_date'].required = False
+        self.fields['status'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
+        entry_type = self.data.get('entry_type')
         total_amount = cleaned_data.get('total_amount')
         total_installments = cleaned_data.get('total_installments')
         installment_value = cleaned_data.get('installment_value')
         paid_installments = cleaned_data.get('paid_installments') or 0
+
+        if entry_type == 'fijo':
+            try:
+                due_day = int(self.data.get('due_day', ''))
+            except (TypeError, ValueError):
+                due_day = None
+            if not due_day or due_day < 1 or due_day > 31:
+                raise forms.ValidationError("Debes proporcionar un día de vencimiento entre 1 y 31.")
+            if not installment_value:
+                raise forms.ValidationError("Debes proporcionar el monto mensual del gasto fijo.")
+            cleaned_data['total_installments'] = 1
+            cleaned_data['paid_installments'] = 0
+            cleaned_data['total_amount'] = installment_value
+            cleaned_data['start_date'] = cleaned_data.get('start_date') or timezone.localdate()
+            cleaned_data['status'] = 'ACTIVE'
+            return cleaned_data
+
+        if not total_installments:
+            raise forms.ValidationError("Debes proporcionar la cantidad de cuotas.")
+
+        if not cleaned_data.get('start_date'):
+            raise forms.ValidationError("Debes proporcionar la fecha de inicio.")
+
+        cleaned_data['status'] = cleaned_data.get('status') or 'ACTIVE'
 
         if total_installments and paid_installments > total_installments:
             raise forms.ValidationError("Las cuotas pagadas no pueden superar la cantidad total de cuotas.")
