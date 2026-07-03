@@ -26,7 +26,7 @@
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <div class="grid grid-cols-1 gap-3 pt-4 sm:grid-cols-3">
+        <div class="grid grid-cols-1 gap-3 pt-4">
             <a href="{% url 'installment_create' %}?type=fijo" class="rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:bg-white/10">
                 <span class="block text-sm font-bold text-white">Gasto Fijo Mensual</span>
                 <span class="mt-1 block text-xs text-slate-400">Servicios, suscripciones o pagos mensuales.</span>
@@ -52,7 +52,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {% for item in fixed_expenses %}
         {% with fixed=item.recurrence period=item.period %}
         <div class="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col">
@@ -101,17 +101,17 @@
             {% endif %}
 
             <!-- Botones de Acciones -->
-            <div class="flex gap-2 border-t border-white/5 pt-3">
-                <a href="{% url 'fixed_expense_edit' fixed.id %}" class="flex-1 text-center rounded-lg bg-purple-500/15 px-2 py-1.5 text-xs font-semibold text-purple-300 transition-colors hover:bg-purple-500/30">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 border-t border-white/5 pt-3">
+                <a href="{% url 'fixed_expense_edit' fixed.id %}" class="w-full text-center rounded-lg bg-purple-500/15 px-2 py-1.5 text-xs font-semibold text-purple-300 transition-colors hover:bg-white/10">
                     Editar
                 </a>
-                <form method="post" action="{% url 'fixed_expense_delete' fixed.id %}" class="flex-1" onsubmit="return confirm('¿Deseas eliminar este gasto fijo?');">
+                <form method="post" action="{% url 'fixed_expense_delete' fixed.id %}" class="w-full" onsubmit="return confirm('¿Deseas eliminar este gasto fijo?');">
                     {% csrf_token %}
-                    <button type="submit" class="w-full text-center rounded-lg bg-rose-500/15 px-2 py-1.5 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-500/30">
+                    <button type="submit" class="w-full text-center rounded-lg bg-rose-500/15 px-2 py-1.5 text-xs font-semibold text-rose-300 transition-colors hover:bg-white/10">
                         Eliminar
                     </button>
                 </form>
-                <form method="post" action="{% url 'fixed_expense_deactivate' fixed.id %}" class="flex-1">
+                <form method="post" action="{% url 'fixed_expense_deactivate' fixed.id %}" class="w-full">
                     {% csrf_token %}
                     <button type="submit" class="w-full text-center rounded-lg bg-white/5 px-2 py-1.5 text-xs font-semibold text-slate-400 transition-colors hover:bg-white/10">
                         Desactivar
@@ -139,16 +139,16 @@
         <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-3 mb-3">
                 <span class="text-xs text-slate-400 font-medium">Inicio: {{ inst.start_date }}</span>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold w-fit
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold
                     {% if inst.status == 'ACTIVE' %}bg-purple-500/15 border border-purple-500/20 text-purple-300
                     {% elif inst.status == 'COMPLETED' %}bg-emerald-500/15 border border-emerald-500/20 text-emerald-300
-                    {% else %}bg-slate-500/15 border border-slate-500/20 text-slate-400{% endif %}">
+                    {% else %}bg-slate-500/15 border border-slate-500/20 text-slate-400{% endif %}" style="width: fit-content;">
                     {{ inst.get_status_display }}
                 </span>
             </div>
             
             <div class="mb-3">
-                <h3 class="font-bold text-white text-sm line-clamp-2">{{ inst.product_name }}</h3>
+                <h3 class="font-bold text-white text-sm" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ inst.product_name }}</h3>
                 <p class="text-xs text-slate-400 mt-1">Total: {{ inst.total_amount|gs_format }} | Cuota: {{ inst.installment_value|gs_format }}</p>
                 <div class="flex flex-wrap gap-1.5 mt-2">
                     <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-slate-400 truncate">{{ inst.wallet.name }}</span>
@@ -171,17 +171,17 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-white/5 pt-3">
                 <div class="flex gap-2 w-full sm:w-auto">
                     {% if inst.status == 'ACTIVE' and inst.pending_installments > 0 %}
-                    <form method="post" action="{% url 'installment_pay' inst.id %}" class="flex-1 sm:flex-initial">
+                    <form method="post" action="{% url 'installment_pay' inst.id %}" class="flex-1 sm:flex-none">
                         {% csrf_token %}
                         <button type="submit" class="w-full rounded-lg bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-300 transition-colors hover:bg-emerald-500/30">
                             Pagar cuota
                         </button>
                     </form>
                     {% else %}
-                    <span class="flex-1 sm:flex-initial text-center rounded-lg bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-500">Sin cuota pendiente</span>
+                    <span class="flex-1 sm:flex-none text-center rounded-lg bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-500">Sin cuota pendiente</span>
                     {% endif %}
                 </div>
-                <a href="{% url 'installment_edit' inst.id %}" class="text-center rounded-lg bg-purple-500/15 px-3 py-1.5 text-xs font-semibold text-purple-300 transition-colors hover:bg-purple-500/30 flex-1 sm:flex-initial">
+                <a href="{% url 'installment_edit' inst.id %}" class="text-center rounded-lg bg-purple-500/15 px-3 py-1.5 text-xs font-semibold text-purple-300 transition-colors hover:bg-white/10 flex-1 sm:flex-none">
                     Editar
                 </a>
             </div>

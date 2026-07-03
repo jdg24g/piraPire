@@ -15,7 +15,7 @@
         <p class="text-slate-400 mt-1">Configura los detalles de tu gasto recurrente mensual</p>
     </div>
 
-    <div class="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl">
+    <div class="glass-card p-4 sm:p-8 rounded-3xl border border-white/10 shadow-2xl">
         <form method="post" class="space-y-6">
             {% csrf_token %}
             
@@ -74,25 +74,25 @@
             <!-- Opciones -->
             <div class="space-y-4">
                 <!-- Monto Variable -->
-                <div class="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
                     <div class="flex items-center gap-2">
                         {{ form.amount_is_variable }}
                         <label for="{{ form.amount_is_variable.id_for_label }}" class="text-sm font-semibold text-slate-300 cursor-pointer">
                             {{ form.amount_is_variable.label }}
                         </label>
                     </div>
-                    <p class="text-xs text-slate-400 ml-auto">Se cargará el monto real al marcar como pagado</p>
+                    <p class="text-xs text-slate-400">Se cargará el monto real al marcar como pagado</p>
                 </div>
 
                 <!-- Activo -->
-                <div class="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
                     <div class="flex items-center gap-2">
                         {{ form.is_active }}
                         <label for="{{ form.is_active.id_for_label }}" class="text-sm font-semibold text-slate-300 cursor-pointer">
                             {{ form.is_active.label }}
                         </label>
                     </div>
-                    <p class="text-xs text-slate-400 ml-auto">Desactiva para dejar de registrar este gasto</p>
+                    <p class="text-xs text-slate-400">Desactiva para dejar de registrar este gasto</p>
                 </div>
             </div>
 
@@ -108,4 +108,23 @@
         </form>
     </div>
 </div>
+<script>
+    (() => {
+        const variableInput = document.getElementById('{{ form.amount_is_variable.id_for_label }}');
+        const amountInput = document.getElementById('{{ form.amount.id_for_label }}');
+        if (!variableInput || !amountInput) return;
+
+        function syncAmountField() {
+            const isVariable = variableInput.checked;
+            amountInput.disabled = isVariable;
+            amountInput.required = !isVariable;
+            amountInput.classList.toggle('opacity-50', isVariable);
+            amountInput.classList.toggle('cursor-not-allowed', isVariable);
+            if (isVariable) amountInput.value = '';
+        }
+
+        variableInput.addEventListener('change', syncAmountField);
+        syncAmountField();
+    })();
+</script>
 {% endblock %}
