@@ -282,6 +282,9 @@
         {% block content %}
         {% endblock %}
     </main>
+    <div data-page-overlays>
+        {% block overlays %}{% endblock %}
+    </div>
 
     <script>
         (() => {
@@ -406,6 +409,7 @@
                 }
 
                 currentMain.replaceWith(nextMain);
+                syncShellFragment(nextDocument, '[data-page-overlays]');
                 syncShellFragment(nextDocument, '[data-desktop-nav]');
                 syncShellFragment(nextDocument, '[data-mobile-nav]');
                 runInlineScripts(nextMain);
