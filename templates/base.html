@@ -413,6 +413,7 @@
                 syncShellFragment(nextDocument, '[data-desktop-nav]');
                 syncShellFragment(nextDocument, '[data-mobile-nav]');
                 runInlineScripts(nextMain);
+                runInlineScripts(document.querySelector('[data-page-overlays]') || document);
                 dismissMessages(nextMain);
                 nextMain.classList.add('page-enter');
                 nextMain.addEventListener('animationend', () => {
