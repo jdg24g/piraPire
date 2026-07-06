@@ -3,10 +3,10 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 # ponytail: vistas web CRUD para compras en cuotas (InstallmentPurchase)
-from django.views.generic import ListView, CreateView, UpdateView, View
+from django.views.generic import ListView, CreateView, UpdateView, TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, get_object_or_404
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
@@ -77,6 +77,93 @@ def get_next_pending_period(recurrence, today=None):
         'is_overdue': False,
     }
 
+
+def build_installment_sheet(user):
+    rows = []
+    totals = {
+        'monthly_amount': Decimal('0'),
+        'paid_count': 0,
+        'total_installments': 0,
+        'remaining_amount': Decimal('0'),
+        'paid_amount': Decimal('0'),
+        'total_amount': Decimal('0'),
+        'remaining_count': 0,
+    }
+
+    purchases = InstallmentPurchase.objects.filter(user=user).select_related('wallet', 'category')
+    for purchase in purchases:
+        installment_value = purchase.installment_value or Decimal('0')
+        total_amount = purchase.total_amount or (installment_value * purchase.total_installments)
+        paid_amount = installment_value * purchase.paid_installments
+        remaining_count = purchase.pending_installments
+        remaining_amount = installment_value * remaining_count
+
+        rows.append({
+            'kind': 'installment',
+            'label': purchase.product_name,
+            'type_label': purchase.category.name,
+            'wallet': purchase.wallet.name,
+            'monthly_amount': installment_value,
+            'paid_count': purchase.paid_installments,
+            'total_installments': purchase.total_installments,
+            'remaining_amount': remaining_amount,
+            'paid_amount': paid_amount,
+            'total_amount': total_amount,
+            'remaining_count': remaining_count,
+            'status': purchase.get_status_display(),
+            'edit_url': reverse('installment_edit', args=[purchase.id]),
+            'pay_url': reverse('installment_pay', args=[purchase.id]),
+            'can_pay': purchase.status == 'ACTIVE' and remaining_count > 0,
+        })
+
+        totals['monthly_amount'] += installment_value
+        totals['paid_count'] += purchase.paid_installments
+        totals['total_installments'] += purchase.total_installments
+        totals['remaining_amount'] += remaining_amount
+        totals['paid_amount'] += paid_amount
+        totals['total_amount'] += total_amount
+        totals['remaining_count'] += remaining_count
+
+    fixed_qs = RecurrentMovement.objects.filter(
+        user=user,
+        type='EXPENSE',
+        frequency='MONTHLY',
+        is_active=True,
+    ).select_related('wallet', 'category')
+    for recurrence in fixed_qs:
+        period = get_next_pending_period(recurrence)
+        monthly_amount = Decimal('0') if recurrence.amount_is_variable else recurrence.amount
+        remaining_amount = monthly_amount
+
+        rows.append({
+            'kind': 'fixed',
+            'label': recurrence.description,
+            'type_label': recurrence.category.name,
+            'wallet': recurrence.wallet.name,
+            'monthly_amount': monthly_amount,
+            'paid_count': 0,
+            'total_installments': 1,
+            'remaining_amount': remaining_amount,
+            'paid_amount': Decimal('0'),
+            'total_amount': monthly_amount,
+            'remaining_count': 1,
+            'status': f"Pendiente {period['label']}",
+            'edit_url': reverse('fixed_expense_edit', args=[recurrence.id]),
+            'pay_url': reverse('fixed_expense_pay', args=[recurrence.id]),
+            'deactivate_url': reverse('fixed_expense_deactivate', args=[recurrence.id]),
+            'can_pay': True,
+            'amount_is_variable': recurrence.amount_is_variable,
+            'period': period,
+        })
+
+        totals['monthly_amount'] += monthly_amount
+        totals['total_installments'] += 1
+        totals['remaining_amount'] += remaining_amount
+        totals['total_amount'] += monthly_amount
+        totals['remaining_count'] += 1
+
+    return rows, totals
+
 class InstallmentPurchaseListView(LoginRequiredMixin, ListView):
     model = InstallmentPurchase
     template_name = 'installments/list.html'
@@ -102,6 +189,17 @@ class InstallmentPurchaseListView(LoginRequiredMixin, ListView):
             })
 
         context['fixed_expenses'] = fixed_expenses
+        return context
+
+
+class InstallmentSheetView(LoginRequiredMixin, TemplateView):
+    template_name = 'installments/sheet.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        rows, totals = build_installment_sheet(self.request.user)
+        context['sheet_rows'] = rows
+        context['sheet_totals'] = totals
         return context
 
 class InstallmentPurchaseCreateView(LoginRequiredMixin, CreateView):

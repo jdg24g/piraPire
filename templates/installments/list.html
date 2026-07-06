@@ -10,9 +10,14 @@
         <p class="text-slate-400 mt-1">Monitorea compras financiadas y pagos mensuales recurrentes</p>
     </div>
     
-    <button type="button" data-open-register-modal class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-semibold text-sm transition-all duration-200 text-center shadow-lg shadow-indigo-600/20">
-        + Registrar Compra
-    </button>
+    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <a href="{% url 'installment_sheet' %}" class="w-full rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-center text-sm font-semibold text-slate-300 transition-colors hover:bg-white/10 sm:w-auto">
+            Ver planilla
+        </a>
+        <button type="button" data-open-register-modal class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl text-white font-semibold text-sm transition-all duration-200 text-center shadow-lg shadow-indigo-600/20">
+            + Registrar Compra
+        </button>
+    </div>
 </div>
 
 <!-- Listado de Gastos Fijos Mensuales -->
