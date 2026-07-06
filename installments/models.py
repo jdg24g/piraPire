@@ -1,6 +1,7 @@
 import datetime
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from wallets.models import Wallet
 from categories.models import Category
 
@@ -43,7 +44,7 @@ class InstallmentPurchase(models.Model):
         related_name='installments'
     )
     product_name = models.CharField(max_length=150)
-    total_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     total_installments = models.PositiveIntegerField()
     installment_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     paid_installments = models.PositiveIntegerField(default=0)
@@ -69,10 +70,21 @@ class InstallmentPurchase(models.Model):
             return min(100, int((self.paid_installments / self.total_installments) * 100))
         return 0
 
+    def clean(self):
+        super().clean()
+        if self.total_installments and self.paid_installments > self.total_installments:
+            raise ValidationError({'paid_installments': 'Las cuotas pagadas no pueden superar el total de cuotas.'})
+        if self.total_installments and self.total_installments <= 0:
+            raise ValidationError({'total_installments': 'La cantidad total de cuotas debe ser mayor a 0.'})
+
     def save(self, *args, **kwargs):
-        # ponytail: calcular automáticamente el valor de cada cuota y la fecha de finalización
-        if not self.installment_value and self.total_installments > 0:
+        # ponytail: calcular automáticamente el total o el valor de cada cuota.
+        if self.total_amount is None and self.installment_value is not None and self.total_installments > 0:
+            self.total_amount = self.installment_value * self.total_installments
+        if self.installment_value is None and self.total_amount is not None and self.total_installments > 0:
             self.installment_value = self.total_amount / self.total_installments
+        if self.total_amount is None and self.installment_value is None:
+            raise ValidationError('Debes proporcionar el Monto Total o el Valor de Cuota.')
         
         if self.start_date and self.total_installments > 0:
             # Las cuotas duran N-1 meses a partir del mes de inicio

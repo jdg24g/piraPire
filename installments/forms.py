@@ -52,6 +52,8 @@ class InstallmentPurchaseForm(forms.ModelForm):
         self.fields['paid_installments'].required = False
         self.fields['start_date'].required = False
         self.fields['status'].required = False
+        self.fields['total_amount'].help_text = "Si conoces el valor de la cuota, el monto total se calculará automáticamente"
+        self.fields['total_amount'].widget.attrs.pop('required', None)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -88,10 +90,19 @@ class InstallmentPurchaseForm(forms.ModelForm):
         if total_installments and paid_installments > total_installments:
             raise forms.ValidationError("Las cuotas pagadas no pueden superar la cantidad total de cuotas.")
 
-        if not total_amount:
-            if not installment_value or not total_installments:
-                raise forms.ValidationError("Debes proporcionar el Monto Total o el Valor Mensual junto con la Cantidad de Cuotas.")
+        if total_amount is None and installment_value is None:
+            raise forms.ValidationError("Debes proporcionar el Monto Total o el Valor de Cuota junto con la Cantidad de Cuotas.")
+
+        if total_amount is not None and total_amount <= 0:
+            raise forms.ValidationError("El Monto Total debe ser mayor a 0.")
+
+        if installment_value is not None and installment_value <= 0:
+            raise forms.ValidationError("El Valor de Cuota debe ser mayor a 0.")
+
+        if total_amount is None:
             cleaned_data['total_amount'] = installment_value * total_installments
+        elif installment_value is None:
+            cleaned_data['installment_value'] = total_amount / total_installments
 
         return cleaned_data
 
