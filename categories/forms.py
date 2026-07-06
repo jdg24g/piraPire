@@ -1,5 +1,6 @@
 # ponytail: formulario simple para Category filtrando categorías padre permitidas
 from django import forms
+from django.db.models import Q
 from .models import Category
 
 class CategoryForm(forms.ModelForm):
@@ -25,5 +26,5 @@ class CategoryForm(forms.ModelForm):
         if user:
             # Solo permitir categorías del usuario o por defecto como categorías padre
             self.fields['parent'].queryset = Category.objects.filter(
-                models.Q(user=user) | models.Q(is_default=True)
+                Q(user=user) | Q(is_default=True)
             ).exclude(id=self.instance.id if self.instance.id else -1)
