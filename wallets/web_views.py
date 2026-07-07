@@ -8,23 +8,15 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
-from categories.models import Category
 from transactions.models import Transaction
 from .models import Wallet
 from .forms import WalletForm
-
-
-def get_wallet_auto_category(user, name, applies_to='BOTH'):
-    category, _ = Category.objects.get_or_create(
-        user=user,
-        name=name,
-        parent=None,
-        defaults={
-            'applies_to': applies_to,
-            'is_active': True,
-        },
-    )
-    return category
+from .services import (
+    create_balance_adjustment,
+    get_wallet_auto_category,
+    insufficient_balance_message,
+    wallet_can_cover_expense,
+)
 
 class WalletListView(LoginRequiredMixin, ListView):
     model = Wallet
@@ -114,6 +106,9 @@ class CreditCardPaymentView(LoginRequiredMixin, View):
         if amount <= 0:
             messages.error(request, "El monto del pago debe ser mayor a cero.")
             return redirect('wallet_list')
+        if not wallet_can_cover_expense(source_wallet, amount):
+            messages.error(request, insufficient_balance_message(source_wallet, amount))
+            return redirect('wallet_list')
 
         category = get_wallet_auto_category(request.user, 'Pago de tarjeta')
         with transaction.atomic():
@@ -139,4 +134,32 @@ class CreditCardPaymentView(LoginRequiredMixin, View):
             )
 
         messages.success(request, "Pago de tarjeta registrado exitosamente.")
+        return redirect('wallet_list')
+
+
+class WalletBalanceAdjustView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        wallet = get_object_or_404(
+            Wallet,
+            pk=pk,
+            user=request.user,
+            is_active=True,
+        )
+
+        try:
+            tx, difference = create_balance_adjustment(
+                request.user,
+                wallet,
+                request.POST.get('target_balance'),
+            )
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect('wallet_list')
+
+        if tx is None:
+            messages.info(request, "El saldo ya coincide con el saldo real indicado.")
+        elif difference > 0:
+            messages.success(request, f"Saldo ajustado con un ingreso de {difference}.")
+        else:
+            messages.success(request, f"Saldo ajustado con un gasto de {abs(difference)}.")
         return redirect('wallet_list')

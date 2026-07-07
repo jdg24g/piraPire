@@ -9,6 +9,7 @@ from django.db.models import Q
 from .models import Transaction
 from .forms import TransactionForm
 from wallets.models import Wallet
+from wallets.services import transaction_delete_keeps_wallet_non_negative
 from categories.models import Category
 
 class TransactionListView(LoginRequiredMixin, ListView):
@@ -101,6 +102,13 @@ class TransactionUpdateView(LoginRequiredMixin, UpdateView):
 class TransactionDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         transaction = get_object_or_404(Transaction, pk=pk, user=request.user)
+        is_valid, message = transaction_delete_keeps_wallet_non_negative(transaction)
+        if not is_valid:
+            messages.error(request, message)
+            next_url = request.POST.get('next')
+            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                return redirect(next_url)
+            return redirect('transaction_list')
 
         if hasattr(transaction, 'recurrence_payment'):
             transaction.recurrence_payment.delete()

@@ -12,6 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 from recurrences.models import RecurrentMovement, RecurrentPayment
 from transactions.models import Transaction
+from wallets.services import insufficient_balance_message, wallet_can_cover_expense
 from .models import InstallmentPurchase
 from .forms import InstallmentPurchaseForm, FixedExpenseForm
 
@@ -288,6 +289,9 @@ class InstallmentPurchasePayView(LoginRequiredMixin, View):
         if purchase.paid_installments >= purchase.total_installments:
             messages.error(request, "Esta compra ya tiene todas las cuotas pagadas.")
             return redirect('installment_list')
+        if not wallet_can_cover_expense(purchase.wallet, purchase.installment_value):
+            messages.error(request, insufficient_balance_message(purchase.wallet, purchase.installment_value))
+            return redirect('installment_list')
 
         with transaction.atomic():
             purchase.paid_installments += 1
@@ -349,6 +353,9 @@ class FixedExpensePayView(LoginRequiredMixin, View):
                 messages.error(request, "Debes ingresar el monto pagado este mes.")
                 return redirect('installment_list')
             subtype = 'VARIABLE_FIXED'
+        if not wallet_can_cover_expense(recurrence.wallet, amount):
+            messages.error(request, insufficient_balance_message(recurrence.wallet, amount))
+            return redirect('installment_list')
 
         with transaction.atomic():
             tx = Transaction.objects.create(

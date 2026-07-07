@@ -6,6 +6,7 @@ from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from transactions.models import Transaction
+from wallets.services import insufficient_balance_message, wallet_can_cover_expense
 from .models import RecurrentMovement, RecurrentPayment
 from .serializers import RecurrentMovementSerializer
 from .services import get_next_pending_period, period_label
@@ -77,6 +78,12 @@ class RecurrentMovementViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             subtype = 'VARIABLE_FIXED'
+
+        if not wallet_can_cover_expense(recurrence.wallet, amount):
+            return Response(
+                {'amount': insufficient_balance_message(recurrence.wallet, amount)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         with transaction.atomic():
             tx = Transaction.objects.create(

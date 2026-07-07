@@ -5,23 +5,15 @@ from django.utils import timezone
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from categories.models import Category
 from transactions.models import Transaction
 from .models import Wallet
 from .serializers import WalletSerializer
-
-
-def get_wallet_auto_category(user, name, applies_to='BOTH'):
-    category, _ = Category.objects.get_or_create(
-        user=user,
-        name=name,
-        parent=None,
-        defaults={
-            'applies_to': applies_to,
-            'is_active': True,
-        },
-    )
-    return category
+from .services import (
+    create_balance_adjustment,
+    get_wallet_auto_category,
+    insufficient_balance_message,
+    wallet_can_cover_expense,
+)
 
 
 class WalletViewSet(viewsets.ModelViewSet):
@@ -83,6 +75,11 @@ class WalletViewSet(viewsets.ModelViewSet):
                 {'source_wallet': 'Selecciona una cuenta origen que no sea tarjeta de crédito.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if not wallet_can_cover_expense(source_wallet, amount):
+            return Response(
+                {'amount': insufficient_balance_message(source_wallet, amount)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         category = get_wallet_auto_category(request.user, 'Pago de tarjeta')
         with transaction.atomic():
@@ -113,3 +110,30 @@ class WalletViewSet(viewsets.ModelViewSet):
             'credit_transaction_id': credit_tx.id,
             'wallet': self.get_serializer(credit_wallet).data,
         }, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='adjust-balance')
+    def adjust_balance(self, request, pk=None):
+        wallet = self.get_object()
+        try:
+            tx, difference = create_balance_adjustment(
+                request.user,
+                wallet,
+                request.data.get('target_balance'),
+            )
+        except ValueError as exc:
+            return Response(
+                {'target_balance': str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        detail = 'El saldo ya coincide con el saldo real indicado.'
+        if tx is not None:
+            detail = 'Saldo ajustado exitosamente.'
+
+        wallet.refresh_from_db()
+        return Response({
+            'detail': detail,
+            'transaction_id': tx.id if tx else None,
+            'difference': str(difference),
+            'wallet': self.get_serializer(wallet).data,
+        }, status=status.HTTP_201_CREATED if tx else status.HTTP_200_OK)

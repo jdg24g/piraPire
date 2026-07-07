@@ -3,6 +3,7 @@ from django import forms
 from django.db.models import Q
 from .models import Transaction
 from wallets.models import Wallet
+from wallets.services import transaction_keeps_wallets_non_negative
 from categories.models import Category
 
 class TransactionForm(forms.ModelForm):
@@ -38,3 +39,21 @@ class TransactionForm(forms.ModelForm):
             self.fields['category'].queryset = Category.objects.filter(
                 Q(user=user) | Q(is_default=True)
             ).filter(is_active=True)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        wallet = cleaned_data.get('wallet')
+        amount = cleaned_data.get('amount')
+        tx_type = cleaned_data.get('type')
+
+        if wallet and amount and tx_type:
+            is_valid, message = transaction_keeps_wallets_non_negative(
+                wallet,
+                tx_type,
+                amount,
+                self.instance,
+            )
+            if not is_valid:
+                raise forms.ValidationError(message)
+
+        return cleaned_data

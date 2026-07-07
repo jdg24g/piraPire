@@ -252,6 +252,8 @@ Body:
 ```
 El pago crea dos movimientos `CREDIT_PAYMENT`: egreso desde la cuenta origen e ingreso en la tarjeta. Estos movimientos se excluyen de ingresos/gastos de dashboard y reportes para no duplicar presupuesto.
 
+La cuenta origen no puede quedar con saldo negativo. Si el monto supera el saldo disponible, la API responde `400`.
+
 Respuesta:
 ```json
 {
@@ -263,6 +265,36 @@ Respuesta:
     "type": "CREDIT",
     "current_debt": "200000.00",
     "available_credit": "4800000.00"
+  }
+}
+```
+
+#### Ajustar saldo real de una cuenta
+```
+POST /api/wallets/{id}/adjust-balance/
+```
+Body:
+```json
+{
+  "target_balance": "84977.00"
+}
+```
+
+Este endpoint es para reconciliar una cuenta normal cuando el saldo calculado por movimientos no coincide con el saldo real. El backend calcula la diferencia contra `current_balance` y crea automáticamente:
+- un `INCOME / UNIQUE` si falta dinero en el sistema;
+- un `EXPENSE / NORMAL` si sobra dinero en el sistema.
+
+No aplica para tarjetas de crédito (`CREDIT`) y `target_balance` no puede ser negativo.
+
+Respuesta con ajuste:
+```json
+{
+  "detail": "Saldo ajustado exitosamente.",
+  "transaction_id": 120,
+  "difference": "915023.00",
+  "wallet": {
+    "id": 1,
+    "current_balance": "84977.00"
   }
 }
 ```
@@ -290,6 +322,8 @@ DELETE /api/wallets/{id}/
 ```
 
 > En cuentas normales, `current_balance` se calcula con movimientos de ingresos y gastos. En tarjetas `CREDIT`, `current_balance` representa la deuda como valor negativo y se complementa con `current_debt` / `available_credit`.
+>
+> Las cuentas normales (`CASH`, `BANK`, `DEBIT`, `E_WALLET`, `OTHER`) no aceptan gastos que dejen el saldo por debajo de cero. Si el saldo real está desfasado, primero usar `adjust-balance`.
 
 ---
 
@@ -410,6 +444,8 @@ POST /api/transactions/
   "description": "Netflix"
 }
 ```
+
+En cuentas normales, un gasto se rechaza si `amount` supera el saldo disponible de la wallet. Editar o borrar movimientos también se rechaza si el resultado dejaría una cuenta normal con saldo negativo. Las tarjetas `CREDIT` sí pueden recibir gastos porque esos cargos aumentan la deuda.
 
 #### Registrar gasto en cuotas
 ```json

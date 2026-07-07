@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Transaction
 from wallets.models import Wallet
+from wallets.services import transaction_keeps_wallets_non_negative
 from categories.models import Category
 
 
@@ -36,8 +37,8 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"category": "La categoría seleccionada no le pertenece."})
 
         # Validar consistencia entre type y subtype
-        t_type = data.get('type')
-        subtype = data.get('subtype')
+        t_type = data.get('type', getattr(self.instance, 'type', None))
+        subtype = data.get('subtype', getattr(self.instance, 'subtype', None))
         
         income_subtypes = ['UNIQUE', 'RECURRENT', 'VARIABLE', 'CREDIT_PAYMENT']
         expense_subtypes = ['NORMAL', 'FIXED', 'VARIABLE_FIXED', 'INSTALLMENT', 'CREDIT_PAYMENT']
@@ -50,5 +51,17 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"subtype": f"Para un gasto, el subtipo debe ser uno de: {', '.join(expense_subtypes)}"}
             )
+
+        amount = data.get('amount', getattr(self.instance, 'amount', None))
+        wallet = data.get('wallet', getattr(self.instance, 'wallet', None))
+        if wallet and amount and t_type:
+            is_valid, message = transaction_keeps_wallets_non_negative(
+                wallet,
+                t_type,
+                amount,
+                self.instance,
+            )
+            if not is_valid:
+                raise serializers.ValidationError({"amount": message})
 
         return data
