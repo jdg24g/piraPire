@@ -16,7 +16,7 @@
     </div>
 
     <div class="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl relative">
-        <form method="post" class="space-y-6">
+        <form method="post" action="{% if object %}{% url 'transaction_edit' object.id %}{% else %}{% url 'transaction_create' %}{% endif %}" class="space-y-6">
             {% csrf_token %}
             
             {% if form.errors %}
@@ -89,7 +89,7 @@
                     Cancelar
                 </a>
                 <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center">
-                    Guardar Cambios
+                    {% if object %}Guardar Cambios{% else %}Registrar Movimiento{% endif %}
                 </button>
             </div>
         </form>
@@ -110,8 +110,8 @@
             text: opt.text
         }));
 
-        const incomeSubtypes = ['UNIQUE', 'RECURRENT', 'VARIABLE'];
-        const expenseSubtypes = ['NORMAL', 'FIXED', 'VARIABLE_FIXED', 'INSTALLMENT'];
+        const incomeSubtypes = ['UNIQUE', 'RECURRENT', 'VARIABLE', 'CREDIT_PAYMENT'];
+        const expenseSubtypes = ['NORMAL', 'FIXED', 'VARIABLE_FIXED', 'INSTALLMENT', 'CREDIT_PAYMENT'];
 
         function filterSubtypes() {
             const selectedType = typeSelect.value;

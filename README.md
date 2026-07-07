@@ -199,14 +199,71 @@ Respuesta:
       "user": 1,
       "name": "Cuenta banco",
       "type": "BANK",
-      "initial_balance": "500000.00",
+      "initial_balance": "0.00",
       "current_balance": "320000.00",
+      "current_debt": "0.00",
+      "credit_limit": null,
+      "available_credit": null,
+      "statement_closing_day": null,
+      "payment_due_day": null,
+      "card_brand": "",
+      "issuer": "",
       "currency": "PYG",
       "is_active": true,
       "created_at": "2026-07-01T10:00:00Z",
       "updated_at": "2026-07-01T10:00:00Z"
     }
   ]
+}
+```
+
+Si `initial_balance > 0` en una cuenta que no es tarjeta de crédito, el backend guarda la cuenta con `initial_balance = 0` y crea automáticamente un movimiento `INCOME / UNIQUE` con descripción `Saldo inicial - {cuenta}`. Así dashboard y reportes reconocen ese saldo como ingreso real.
+
+#### Crear tarjeta de crédito
+```json
+{
+  "name": "Ueno Mastercard",
+  "type": "CREDIT",
+  "credit_limit": "5000000.00",
+  "statement_closing_day": 25,
+  "payment_due_day": 10,
+  "card_brand": "Mastercard",
+  "issuer": "Ueno Bank",
+  "currency": "PYG"
+}
+```
+
+Para tarjetas:
+- `current_debt` representa la deuda.
+- `available_credit = credit_limit - current_debt`.
+- `current_balance` se expone como deuda negativa.
+- El saldo inicial no crea ingreso; las tarjetas nuevas inician con deuda `0`.
+
+#### Pagar tarjeta de crédito
+```
+POST /api/wallets/{id}/pay-credit-card/
+```
+Body:
+```json
+{
+  "source_wallet": 1,
+  "amount": "300000.00"
+}
+```
+El pago crea dos movimientos `CREDIT_PAYMENT`: egreso desde la cuenta origen e ingreso en la tarjeta. Estos movimientos se excluyen de ingresos/gastos de dashboard y reportes para no duplicar presupuesto.
+
+Respuesta:
+```json
+{
+  "detail": "Pago de tarjeta registrado exitosamente.",
+  "source_transaction_id": 101,
+  "credit_transaction_id": 102,
+  "wallet": {
+    "id": 5,
+    "type": "CREDIT",
+    "current_debt": "200000.00",
+    "available_credit": "4800000.00"
+  }
 }
 ```
 
@@ -232,7 +289,7 @@ PATCH  /api/wallets/{id}/
 DELETE /api/wallets/{id}/
 ```
 
-> `current_balance` se calcula automáticamente (saldo inicial + ingresos − gastos).
+> En cuentas normales, `current_balance` se calcula con movimientos de ingresos y gastos. En tarjetas `CREDIT`, `current_balance` representa la deuda como valor negativo y se complementa con `current_debt` / `available_credit`.
 
 ---
 
@@ -295,9 +352,11 @@ Body:
 
 Tipos (`type`): `INCOME` · `EXPENSE`
 
-Subtipos para **ingresos** (`subtype`): `UNIQUE` · `RECURRENT` · `VARIABLE`
+Subtipos para **ingresos** (`subtype`): `UNIQUE` · `RECURRENT` · `VARIABLE` · `CREDIT_PAYMENT`
 
-Subtipos para **gastos** (`subtype`): `NORMAL` · `FIXED` · `VARIABLE_FIXED` · `INSTALLMENT`
+Subtipos para **gastos** (`subtype`): `NORMAL` · `FIXED` · `VARIABLE_FIXED` · `INSTALLMENT` · `CREDIT_PAYMENT`
+
+> `CREDIT_PAYMENT` es para pagos de tarjeta generados por el flujo específico de tarjeta. Para compras/cargos con tarjeta, registrar un `EXPENSE` normal en una wallet `CREDIT`.
 
 #### Listar transacciones
 ```
@@ -380,16 +439,19 @@ POST /api/installments/
   "wallet": 1,
   "category": 8,
   "product_name": "Smart TV 55\"",
-  "total_amount": "2340000.00",
   "total_installments": 18,
+  "installment_value": "130000.00",
   "paid_installments": 0,
   "start_date": "2026-07-01"
 }
 ```
 El sistema calcula automáticamente:
-- `installment_value` → 130.000 Gs por cuota
+- `total_amount` si se informa `installment_value + total_installments`
+- `installment_value` si se informa `total_amount + total_installments`
 - `end_date` → fecha estimada de última cuota
 - `pending_installments` → cuotas restantes
+
+Si faltan ambos (`total_amount` e `installment_value`), la API devuelve un error claro.
 
 Respuesta:
 ```json
@@ -429,6 +491,7 @@ POST /api/recurrences/
   "category": 4,
   "type": "EXPENSE",
   "amount": "350000.00",
+  "due_day": 10,
   "frequency": "MONTHLY",
   "start_date": "2026-01-01",
   "description": "Alquiler",
@@ -441,6 +504,85 @@ POST /api/recurrences/
 GET /api/recurrences/
 ```
 Filtros: `?type=EXPENSE` · `?frequency=MONTHLY` · `?is_active=true` · `?wallet=1`
+
+Las recurrencias mensuales devuelven estado de período:
+- `current_period`
+- `current_period_is_paid`
+- `current_period_status`
+- `next_pending_period`
+- `latest_paid_period`
+
+Ejemplo:
+```json
+{
+  "id": 5,
+  "description": "Internet",
+  "amount": "130000.00",
+  "amount_is_variable": false,
+  "due_day": 10,
+  "frequency": "MONTHLY",
+  "is_active": true,
+  "current_period": {
+    "year": 2026,
+    "month": 7,
+    "label": "Julio 2026",
+    "due_date": "2026-07-10",
+    "is_paid": true,
+    "is_overdue": false,
+    "status": "PAID"
+  },
+  "current_period_is_paid": true,
+  "current_period_status": "PAID",
+  "next_pending_period": {
+    "year": 2026,
+    "month": 8,
+    "label": "Agosto 2026",
+    "due_date": "2026-08-10",
+    "is_paid": false,
+    "is_overdue": false,
+    "status": "PENDING"
+  },
+  "latest_paid_period": {
+    "year": 2026,
+    "month": 7,
+    "label": "Julio 2026",
+    "paid_at": "2026-07-06T12:00:00Z",
+    "transaction_id": 123
+  }
+}
+```
+
+Reglas para clientes:
+- Si `current_period_is_paid = true`, no mostrar el mes actual como pendiente.
+- Mostrar `next_pending_period` como próximo pago.
+- Estados posibles: `PAID`, `PENDING`, `OVERDUE`.
+
+#### Marcar gasto fijo como pagado
+```
+POST /api/recurrences/{id}/pay/
+```
+Si no se envía período, paga el próximo pendiente. Para pagos adelantados:
+```json
+{
+  "period_year": 2026,
+  "period_month": 8
+}
+```
+Para gasto fijo variable agregar `amount`.
+
+Respuesta:
+```json
+{
+  "detail": "Gasto fijo de Agosto 2026 marcado como pagado.",
+  "payment": {
+    "id": 20,
+    "period_year": 2026,
+    "period_month": 8,
+    "transaction_id": 300
+  },
+  "recurrence": {}
+}
+```
 
 ---
 
@@ -549,6 +691,17 @@ Todos los listados están paginados. Respuesta estándar:
   "results": [...]
 }
 ```
+
+---
+
+## Reglas para clientes Android / Mobile
+
+- Priorizar los campos calculados que vienen de la API.
+- No recalcular deuda de tarjeta si la API entrega `current_debt` y `available_credit`.
+- No mostrar pagos de tarjeta `CREDIT_PAYMENT` como gasto presupuestario del mes.
+- Para gastos fijos mensuales, usar `next_pending_period` para el botón pagar.
+- Para pagos adelantados, enviar `period_year` y `period_month`.
+- Para gastos fijos variables, pedir `amount` antes de llamar a `/api/recurrences/{id}/pay/`.
 
 Tamaño de página: **50 registros**. Cambiar con `?page=2`.
 

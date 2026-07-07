@@ -55,6 +55,37 @@
             <div class="space-y-2">
                 <label for="{{ form.initial_balance.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.initial_balance.label }}</label>
                 {{ form.initial_balance }}
+                <p data-initial-balance-help class="text-xs text-slate-400">Al crear una cuenta nueva, este monto se registrará como ingreso automático.</p>
+            </div>
+
+            <div data-credit-card-fields class="hidden space-y-6 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Datos de tarjeta de crédito</h2>
+                    <p class="mt-1 text-xs text-slate-400">Estos datos ayudan a calcular deuda, cupo disponible, cierre y vencimiento.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label for="{{ form.credit_limit.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.credit_limit.label }}</label>
+                        {{ form.credit_limit }}
+                    </div>
+                    <div class="space-y-2">
+                        <label for="{{ form.issuer.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.issuer.label }}</label>
+                        {{ form.issuer }}
+                    </div>
+                    <div class="space-y-2">
+                        <label for="{{ form.statement_closing_day.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.statement_closing_day.label }}</label>
+                        {{ form.statement_closing_day }}
+                    </div>
+                    <div class="space-y-2">
+                        <label for="{{ form.payment_due_day.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.payment_due_day.label }}</label>
+                        {{ form.payment_due_day }}
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <label for="{{ form.card_brand.id_for_label }}" class="text-sm font-semibold text-slate-300">{{ form.card_brand.label }}</label>
+                        {{ form.card_brand }}
+                    </div>
+                </div>
             </div>
 
             <!-- Activa / Inactiva -->
@@ -74,4 +105,25 @@
         </form>
     </div>
 </div>
+<script>
+    (() => {
+        const typeInput = document.getElementById('{{ form.type.id_for_label }}');
+        const creditFields = document.querySelector('[data-credit-card-fields]');
+        if (!typeInput || !creditFields) return;
+
+        function syncCreditFields() {
+            const visible = typeInput.value === 'CREDIT';
+            creditFields.classList.toggle('hidden', !visible);
+            const help = document.querySelector('[data-initial-balance-help]');
+            if (help) {
+                help.textContent = visible
+                    ? 'Las tarjetas nuevas inician con deuda 0; registra compras o cargos para aumentar la deuda.'
+                    : 'Al crear una cuenta nueva, este monto se registrará como ingreso automático.';
+            }
+        }
+
+        typeInput.addEventListener('change', syncCreditFields);
+        syncCreditFields();
+    })();
+</script>
 {% endblock %}

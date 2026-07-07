@@ -35,7 +35,12 @@
                     {{ wallet.get_type_display }}
                 </span>
                 <h3 class="text-xl font-bold text-white mt-3 truncate max-w-[180px]">{{ wallet.name }}</h3>
+                {% if wallet.type == 'CREDIT' %}
+                <p class="text-xs text-slate-400 mt-0.5">Línea: {{ wallet.credit_limit|gs_format }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">Disponible: {{ wallet.available_credit|gs_format }}</p>
+                {% else %}
                 <p class="text-xs text-slate-400 mt-0.5">Saldo inicial: {{ wallet.initial_balance|gs_format }}</p>
+                {% endif %}
             </div>
             
             <div class="flex flex-col items-end gap-2">
@@ -47,17 +52,58 @@
         <!-- Footer / Saldo Actual -->
         <div class="p-6 relative z-10 border-t border-white/5 bg-[#0b0f19]/40 flex justify-between items-center">
             <div>
-                <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Saldo Actual</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{% if wallet.type == 'CREDIT' %}Deuda Actual{% else %}Saldo Actual{% endif %}</p>
                 <h4 class="text-2xl font-black text-white mt-0.5">
-                    {{ wallet.current_balance|gs_format }}
+                    {% if wallet.type == 'CREDIT' %}{{ wallet.current_debt|gs_format }}{% else %}{{ wallet.current_balance|gs_format }}{% endif %}
                 </h4>
             </div>
             
-            <a href="{% url 'wallet_edit' wallet.id %}" class="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-white text-xs font-semibold transition-all duration-200">
-                Editar
-            </a>
+            <div class="flex flex-col gap-2">
+                <a href="{% url 'wallet_edit' wallet.id %}" class="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-white text-xs font-semibold transition-all duration-200 text-center">
+                    Editar
+                </a>
+                {% if wallet.type == 'CREDIT' %}
+                <button type="button" data-open-credit-payment="{{ wallet.id }}" class="px-3.5 py-1.5 bg-emerald-500/15 hover:bg-white/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs font-semibold transition-all duration-200">
+                    Pagar
+                </button>
+                {% endif %}
+            </div>
         </div>
     </div>
+    {% if wallet.type == 'CREDIT' %}
+    <div data-credit-payment-modal="{{ wallet.id }}" class="hidden fixed inset-0 items-end justify-center p-3 md:items-center md:p-6" style="z-index: 90; background: rgba(0, 0, 0, 0.72);">
+        <div class="w-full max-w-md rounded-t-3xl border border-white/10 bg-slate-800 p-4 shadow-2xl md:rounded-2xl">
+            <div class="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Pagar {{ wallet.name }}</h2>
+                    <p class="mt-1 text-sm text-slate-400">El pago descuenta de la cuenta origen y reduce la deuda de la tarjeta.</p>
+                </div>
+                <button type="button" data-close-credit-payment class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Cerrar">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="post" action="{% url 'wallet_pay_credit_card' wallet.id %}" class="space-y-4 pt-4">
+                {% csrf_token %}
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-slate-300">Cuenta origen</label>
+                    <select name="source_wallet" required class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        {% for source in payment_source_wallets %}
+                        <option value="{{ source.id }}">{{ source.name }} - {{ source.current_balance|gs_format }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-slate-300">Monto</label>
+                    <input type="number" name="amount" min="0.01" step="0.01" required class="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-md">
+                </div>
+                <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <button type="button" data-close-credit-payment class="w-full sm:w-auto px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 font-semibold text-sm transition-colors">Cancelar</button>
+                    <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-semibold text-sm transition-colors">Registrar pago</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
     {% empty %}
     <div class="col-span-full py-12 text-center glass-card rounded-3xl border border-white/10">
         <svg class="w-12 h-12 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
@@ -68,4 +114,32 @@
     </div>
     {% endfor %}
 </div>
+<script>
+    (() => {
+        document.querySelectorAll('[data-open-credit-payment]').forEach(button => {
+            button.addEventListener('click', () => {
+                const modal = document.querySelector(`[data-credit-payment-modal="${button.dataset.openCreditPayment}"]`);
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        function closeModal(modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        document.querySelectorAll('[data-credit-payment-modal]').forEach(modal => {
+            modal.querySelectorAll('[data-close-credit-payment]').forEach(button => {
+                button.addEventListener('click', () => closeModal(modal));
+            });
+            modal.addEventListener('click', event => {
+                if (event.target === modal) closeModal(modal);
+            });
+        });
+    })();
+</script>
 {% endblock %}

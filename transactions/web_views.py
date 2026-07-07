@@ -66,6 +66,14 @@ class TransactionCreateView(LoginRequiredMixin, CreateView):
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get_initial(self):
+        initial = super().get_initial()
+        tx_type = self.request.GET.get('type')
+        if tx_type in ['INCOME', 'EXPENSE']:
+            initial['type'] = tx_type
+            initial['subtype'] = 'UNIQUE' if tx_type == 'INCOME' else 'NORMAL'
+        return initial
+
     def form_valid(self, form):
         form.instance.user = self.request.user
         messages.success(self.request, "Movimiento registrado exitosamente.")

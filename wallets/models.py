@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.conf import settings
 
@@ -21,6 +23,11 @@ class Wallet(models.Model):
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='CASH')
     initial_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
+    credit_limit = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    statement_closing_day = models.PositiveSmallIntegerField(null=True, blank=True)
+    payment_due_day = models.PositiveSmallIntegerField(null=True, blank=True)
+    card_brand = models.CharField(max_length=50, blank=True, default='')
+    issuer = models.CharField(max_length=100, blank=True, default='')
     currency = models.CharField(max_length=10, default='PYG')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -39,6 +46,9 @@ class Wallet(models.Model):
     def current_balance(self):
         # Evitamos imports circulares importando localmente
         from transactions.models import Transaction
+
+        if self.type == 'CREDIT':
+            return -self.current_debt
         
         income = Transaction.objects.filter(
             wallet=self,
@@ -51,3 +61,30 @@ class Wallet(models.Model):
         ).aggregate(total=models.Sum('amount'))['total'] or 0
         
         return self.initial_balance + income - expense
+
+    @property
+    def current_debt(self):
+        from transactions.models import Transaction
+
+        if self.type != 'CREDIT':
+            return 0
+
+        charges = Transaction.objects.filter(
+            wallet=self,
+            type='EXPENSE',
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+
+        payments = Transaction.objects.filter(
+            wallet=self,
+            type='INCOME',
+            subtype='CREDIT_PAYMENT',
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+
+        debt = charges - payments
+        return max(Decimal('0'), debt)
+
+    @property
+    def available_credit(self):
+        if self.type != 'CREDIT' or self.credit_limit is None:
+            return None
+        return self.credit_limit - self.current_debt

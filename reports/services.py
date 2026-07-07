@@ -29,9 +29,10 @@ def get_dashboard_data(user, year=None, month=None):
         user=user,
         date__range=(start_date_filter, end_date_filter)
     )
+    budget_txs_month = txs_month.exclude(subtype='CREDIT_PAYMENT')
 
     # 1. Total ingresos y gastos
-    totals = txs_month.aggregate(
+    totals = budget_txs_month.aggregate(
         total_income=Sum('amount', filter=Q(type='INCOME')),
         total_expense=Sum('amount', filter=Q(type='EXPENSE'))
     )
@@ -40,7 +41,7 @@ def get_dashboard_data(user, year=None, month=None):
     balance = total_income - total_expense
 
     # 2. Gastos fijos y variables
-    subtotals = txs_month.aggregate(
+    subtotals = budget_txs_month.aggregate(
         fixed=Sum('amount', filter=Q(type='EXPENSE', subtype='FIXED')),
         variable_fixed=Sum('amount', filter=Q(type='EXPENSE', subtype='VARIABLE_FIXED'))
     )
@@ -67,14 +68,14 @@ def get_dashboard_data(user, year=None, month=None):
         .order_index = 0
     
     # Para evitar excepciones si no hay datos
-    top_cat_list = list(txs_month.filter(type='EXPENSE')
+    top_cat_list = list(budget_txs_month.filter(type='EXPENSE')
                         .values('category__name')
                         .annotate(total=models.Sum('amount'))
                         .order_by('-total')[:1])
     top_expense_category = top_cat_list[0]['category__name'] if top_cat_list else None
 
     # 5. Cuenta con mayor movimiento (ingresos + gastos)
-    top_wallet_list = list(txs_month.values('wallet__name')
+    top_wallet_list = list(budget_txs_month.values('wallet__name')
                            .annotate(total=models.Sum('amount'))
                            .order_by('-total')[:1])
     top_wallet = top_wallet_list[0]['wallet__name'] if top_wallet_list else None
@@ -114,7 +115,7 @@ def get_reports_data(user, report_type, filters=None):
         filters = {}
 
     # Construir queryset base de transacciones del usuario
-    qs = Transaction.objects.filter(user=user)
+    qs = Transaction.objects.filter(user=user).exclude(subtype='CREDIT_PAYMENT')
 
     # Aplicar filtros
     date_from = filters.get('date_from')

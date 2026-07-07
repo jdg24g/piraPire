@@ -39,8 +39,8 @@ class TransactionSerializer(serializers.ModelSerializer):
         t_type = data.get('type')
         subtype = data.get('subtype')
         
-        income_subtypes = ['UNIQUE', 'RECURRENT', 'VARIABLE']
-        expense_subtypes = ['NORMAL', 'FIXED', 'VARIABLE_FIXED', 'INSTALLMENT']
+        income_subtypes = ['UNIQUE', 'RECURRENT', 'VARIABLE', 'CREDIT_PAYMENT']
+        expense_subtypes = ['NORMAL', 'FIXED', 'VARIABLE_FIXED', 'INSTALLMENT', 'CREDIT_PAYMENT']
 
         if t_type == 'INCOME' and subtype not in income_subtypes:
             raise serializers.ValidationError(

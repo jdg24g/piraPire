@@ -8,7 +8,7 @@ from django.shortcuts import redirect
 from accounts.web_views import WebLoginView, WebRegisterView, web_logout_view
 from reports.web_views import WebDashboardView, WebReportView
 from transactions.web_views import TransactionListView, TransactionCreateView, TransactionUpdateView, TransactionDeleteView
-from wallets.web_views import WalletListView, WalletCreateView, WalletUpdateView
+from wallets.web_views import WalletListView, WalletCreateView, WalletUpdateView, CreditCardPaymentView
 from categories.web_views import CategoryListView, CategoryCreateView, CategoryUpdateView
 from installments.web_views import InstallmentPurchaseListView, InstallmentPurchaseCreateView, InstallmentPurchaseUpdateView, InstallmentPurchasePayView, InstallmentSheetView, FixedExpensePayView, FixedExpenseDeactivateView, FixedExpenseUpdateView, FixedExpenseDeleteView
 
@@ -38,6 +38,7 @@ urlpatterns = [
     path('wallets/', WalletListView.as_view(), name='wallet_list'),
     path('wallets/new/', WalletCreateView.as_view(), name='wallet_create'),
     path('wallets/<int:pk>/edit/', WalletUpdateView.as_view(), name='wallet_edit'),
+    path('wallets/<int:pk>/pay-credit-card/', CreditCardPaymentView.as_view(), name='wallet_pay_credit_card'),
     
     path('categories/', CategoryListView.as_view(), name='category_list'),
     path('categories/new/', CategoryCreateView.as_view(), name='category_create'),

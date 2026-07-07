@@ -20,6 +20,7 @@ class Transaction(models.Model):
         ('FIXED', 'Gasto Fijo'),
         ('VARIABLE_FIXED', 'Gasto Fijo Variable'),
         ('INSTALLMENT', 'Compra en Cuotas'),
+        ('CREDIT_PAYMENT', 'Pago de Tarjeta'),
     ]
 
     user = models.ForeignKey(
