@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from django.shortcuts import redirect
 
 # Importaciones de vistas web
@@ -18,7 +19,29 @@ def root_redirect_view(request):
         return redirect('dashboard')
     return redirect('login')
 
+
+ASSETLINKS = [
+    {
+        "relation": ["delegate_permission/common.get_login_creds"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.pirapire.app",
+            "sha256_cert_fingerprints": [
+                "9E:F9:18:78:1E:E6:C4:51:12:43:DE:E5:B4:85:46:F1:47:9F:0D:4B:CE:5B:2D:28:48:8C:02:39:D5:73:89:D6",
+            ],
+        },
+    },
+]
+
+
+def assetlinks_view(request):
+    response = JsonResponse(ASSETLINKS, safe=False)
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
 urlpatterns = [
+    path('.well-known/assetlinks.json', assetlinks_view, name='assetlinks'),
     path('admin/', admin.site.urls),
     path('api/', include('config.api_urls')),
     
