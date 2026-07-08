@@ -14,22 +14,32 @@
     <a href="/api/exports/transactions/csv/?date_from={{ filters.date_from|default:'' }}&date_to={{ filters.date_to|default:'' }}&wallet={{ filters.wallet|default:'' }}&category={{ filters.category|default:'' }}&type={{ filters.type|default:'' }}&subtype={{ filters.subtype|default:'' }}" 
        class="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-slate-300 font-semibold text-sm transition-colors text-center flex items-center justify-center gap-2 shadow-lg">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Exportar CSV Filtrado
+        Exportar CSV
     </a>
 </div>
 
 <!-- Filtros de Reportes -->
 <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl mb-8">
-    <form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="flex items-center justify-between gap-3 md:hidden">
+        <div>
+            <h2 class="text-sm font-bold text-white">Filtros</h2>
+            <p class="mt-1 text-xs text-slate-400">Fecha, cuenta y categoría</p>
+        </div>
+        <button type="button" data-toggle-report-filters class="px-3.5 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 font-semibold text-xs transition-colors">
+            Mostrar más
+        </button>
+    </div>
+
+    <form method="get" data-report-filter-form class="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4 md:mt-0">
         <!-- Fecha Desde -->
         <div class="space-y-1">
-            <label class="text-xs font-semibold text-slate-400">Fecha Desde</label>
+            <label class="text-xs font-semibold text-slate-400">Fecha desde</label>
             <input type="date" name="date_from" value="{{ filters.date_from|default:'' }}" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
         </div>
         
         <!-- Fecha Hasta -->
         <div class="space-y-1">
-            <label class="text-xs font-semibold text-slate-400">Fecha Hasta</label>
+            <label class="text-xs font-semibold text-slate-400">Fecha hasta</label>
             <input type="date" name="date_to" value="{{ filters.date_to|default:'' }}" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
         </div>
 
@@ -57,10 +67,10 @@
 
         <div class="md:col-span-4 flex justify-end gap-2 mt-2">
             <a href="{% url 'report_list' %}" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 font-semibold text-sm transition-colors">
-                Limpiar Filtros
+                Limpiar filtros
             </a>
             <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-semibold text-sm transition-colors">
-                Generar Reporte
+                Generar reporte
             </button>
         </div>
     </form>
@@ -134,7 +144,7 @@
     <!-- Agrupación por Categoría -->
     <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
         <h3 class="text-lg font-bold text-white mb-4">Desglose por Categoría</h3>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto scrollbar-none">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
@@ -150,7 +160,7 @@
                         <td class="py-3.5 px-4">
                             <span class="px-2 py-0.5 rounded text-xs font-semibold 
                                 {% if item.type == 'INCOME' %}bg-emerald-500/10 text-emerald-400{% else %}bg-rose-500/10 text-rose-400{% endif %}">
-                                {{ item.type }}
+                                {% if item.type == 'INCOME' %}Ingreso{% else %}Gasto{% endif %}
                             </span>
                         </td>
                         <td class="py-3.5 px-4 text-right font-bold text-white">{{ item.total|gs_format }}</td>
@@ -168,7 +178,7 @@
     <!-- Agrupación por Cuenta -->
     <div class="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
         <h3 class="text-lg font-bold text-white mb-4">Desglose por Cuenta</h3>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto scrollbar-none">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
@@ -184,7 +194,7 @@
                         <td class="py-3.5 px-4">
                             <span class="px-2 py-0.5 rounded text-xs font-semibold 
                                 {% if item.type == 'INCOME' %}bg-emerald-500/10 text-emerald-400{% else %}bg-rose-500/10 text-rose-400{% endif %}">
-                                {{ item.type }}
+                                {% if item.type == 'INCOME' %}Ingreso{% else %}Gasto{% endif %}
                             </span>
                         </td>
                         <td class="py-3.5 px-4 text-right font-bold text-white">{{ item.total|gs_format }}</td>
@@ -287,5 +297,22 @@
     } else {
         setTimeout(initReportCharts, 250);
     }
+
+    (() => {
+        const toggle = document.querySelector('[data-toggle-report-filters]');
+        const form = document.querySelector('[data-report-filter-form]');
+        if (!toggle || !form) return;
+
+        let expanded = false;
+        function setExpanded(nextExpanded) {
+            expanded = nextExpanded;
+            form.classList.toggle('hidden', !expanded);
+            form.classList.toggle('grid', expanded);
+            toggle.textContent = expanded ? 'Mostrar menos' : 'Mostrar más';
+        }
+
+        toggle.addEventListener('click', () => setExpanded(!expanded));
+        setExpanded(false);
+    })();
 </script>
 {% endblock %}

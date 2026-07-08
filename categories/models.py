@@ -30,11 +30,11 @@ class Category(models.Model):
 
     class Meta:
         ordering = ['name']
-        verbose_name_plural = 'Categories'
+        verbose_name_plural = 'Categorías'
         # Evitar nombres duplicados de categoría por usuario
         unique_together = ('user', 'name', 'parent')
 
     def __str__(self):
-        prefix = "[Default] " if self.is_default else ""
+        prefix = "[Predeterminada] " if self.is_default else ""
         parent_str = f" ({self.parent.name})" if self.parent else ""
         return f"{prefix}{self.name}{parent_str} - {self.get_applies_to_display()}"

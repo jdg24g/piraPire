@@ -19,6 +19,13 @@
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        .scrollbar-none {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;
+        }
         main[data-page-container] {
             view-transition-name: page-content;
             contain: layout paint;
@@ -181,7 +188,7 @@
         <nav class="flex-1 space-y-2" data-desktop-nav>
             <a href="{% url 'dashboard' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 {% if request.resolver_match.url_name == 'dashboard' %}bg-white/10 text-white font-medium border border-white/10{% else %}text-slate-400 hover:bg-white/5 hover:text-white{% endif %}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"/></svg>
-                Dashboard
+                Inicio
             </a>
             <a href="{% url 'transaction_list' %}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 {% if 'transaction' in request.resolver_match.url_name %}bg-white/10 text-white font-medium border border-white/10{% else %}text-slate-400 hover:bg-white/5 hover:text-white{% endif %}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
@@ -236,24 +243,28 @@
     </header>
 
     <!-- NAVEGACIÓN INFERIOR (Móvil) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#080b11]/80 backdrop-blur-xl border-t border-white/10 flex justify-around py-3" data-mobile-nav>
-        <a href="{% url 'dashboard' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#080b11]/80 backdrop-blur-xl border-t border-white/10 flex gap-2 overflow-x-auto scrollbar-none px-3 py-2" data-mobile-nav>
+        <a href="{% url 'dashboard' %}" data-mobile-nav-item class="min-w-[76px] flex flex-col items-center rounded-xl px-3 py-1.5 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"/></svg>
-            <span class="text-[10px] mt-1">Dashboard</span>
+            <span class="text-[10px] mt-1">Inicio</span>
         </a>
-        <a href="{% url 'transaction_list' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if 'transaction' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+        <a href="{% url 'transaction_list' %}" data-mobile-nav-item class="min-w-[92px] flex flex-col items-center rounded-xl px-3 py-1.5 transition-colors {% if 'transaction' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
             <span class="text-[10px] mt-1">Movimientos</span>
         </a>
-        <a href="{% url 'wallet_list' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if 'wallet' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+        <a href="{% url 'wallet_list' %}" data-mobile-nav-item class="min-w-[76px] flex flex-col items-center rounded-xl px-3 py-1.5 transition-colors {% if 'wallet' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
             <span class="text-[10px] mt-1">Cuentas</span>
         </a>
-        <a href="{% url 'installment_list' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if 'installment' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+        <a href="{% url 'category_list' %}" data-mobile-nav-item class="min-w-[86px] flex flex-col items-center rounded-xl px-3 py-1.5 transition-colors {% if 'category' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span class="text-[10px] mt-1">Categorías</span>
+        </a>
+        <a href="{% url 'installment_list' %}" data-mobile-nav-item class="min-w-[76px] flex flex-col items-center rounded-xl px-3 py-1.5 transition-colors {% if 'installment' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span class="text-[10px] mt-1">Cuotas</span>
         </a>
-        <a href="{% url 'report_list' %}" data-mobile-nav-item class="flex flex-col items-center rounded-xl px-3 py-1 transition-colors {% if 'report' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
+        <a href="{% url 'report_list' %}" data-mobile-nav-item class="min-w-[78px] flex flex-col items-center rounded-xl px-3 py-1.5 transition-colors {% if 'report' in request.resolver_match.url_name %}bg-white/10 text-purple-400{% else %}text-slate-400{% endif %}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"/></svg>
             <span class="text-[10px] mt-1">Reportes</span>
         </a>
@@ -412,6 +423,7 @@
                 syncShellFragment(nextDocument, '[data-page-overlays]');
                 syncShellFragment(nextDocument, '[data-desktop-nav]');
                 syncShellFragment(nextDocument, '[data-mobile-nav]');
+                scrollActiveMobileNav();
                 runInlineScripts(nextMain);
                 runInlineScripts(document.querySelector('[data-page-overlays]') || document);
                 dismissMessages(nextMain);
@@ -506,6 +518,15 @@
 
                 link.classList.remove('text-slate-400');
                 link.classList.add('bg-white/10', 'text-purple-400');
+                scrollActiveMobileNav(nav);
+            }
+
+            function scrollActiveMobileNav(scope = document) {
+                const nav = scope.querySelector('[data-mobile-nav]');
+                if (!nav) return;
+                const activeItem = Array.from(nav.querySelectorAll('[data-mobile-nav-item]')).find(item => item.classList.contains('text-purple-400'));
+                if (!activeItem) return;
+                activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             }
 
             document.addEventListener('click', event => {
@@ -534,6 +555,7 @@
 
             dismissMessages();
             revealContent();
+            scrollActiveMobileNav();
         })();
     </script>
 </body>
